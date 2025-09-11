@@ -5,22 +5,24 @@ A lightweight Python linter for checking Sphinx docstrings
 Requirements
 - Python 3.8+
 
-Quick usage
+Quick usage, runs on the current working directory by default.
+
 ```bash
 python sphinxlinter.py
 ```
-Runs on the current working directory by default.
+
+Pass one or more files or directories. Directories are searched recursively for `*.py`, ignoring common virtualenv/cache folders.
 
 ```bash
 python sphinxlinter.py path/to/file.py path/to/package_dir
 ```
-Pass one or more files or directories. Directories are searched recursively for `*.py`, ignoring common virtualenv/cache folders.
 
 Example output
 ```text
 /path/to/module.py:42: [DOC102] Invalid parameter type syntax ('List[int]')
 /path/to/module.py:10: [DOC101] Parameter documented but not in signature ('unused_param')
 ```
+
 Format: `filename:line: [CODE] message` 
 
 Common violation codes:
@@ -31,7 +33,7 @@ Common violation codes:
 
 How it works (brief)
 - Parses Python AST to find `FunctionDef` and `ClassDef` members.  
-- Extracts signatures and docstring sections (Sphinx field lists like `:param:`, `:type:`, `:return:`, `:rtype:`, `:raises:`).  
+- Extracts signatures and docstring sections [Sphinx field lists](https://www.sphinx-doc.org/en/master/usage/domains/python.html#info-field-lists).  
 - Validates section presence, syntax and consistency with type annotations.
 
 Notes
@@ -42,12 +44,12 @@ Notes
 
 **DOC0xx: Docstring section issues**
 
-| Code   | Description                                     |
-|--------|-------------------------------------------------|
-| DOC001 | Unknown docstring section                       |
-| DOC002 | Malformed section                               |
-| DOC003 | Missing blank line after docstring              |
-| DOC004 | Missing blank line between summary and sections |
+| Code   | Description                                            |
+|--------|--------------------------------------------------------|
+| DOC001 | Unknown docstring section                              |
+| DOC002 | Malformed section                                      |
+| DOC003 | Missing blank line after docstring   (TODO)            |
+| DOC004 | Missing blank line between summary and sections (TODO) |
 
 **DOC1xx: Parameter issues**
 
