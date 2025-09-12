@@ -2,6 +2,7 @@
 
 import argparse
 import ast
+import collections
 import os
 import pathlib
 import re
@@ -15,6 +16,9 @@ return_set = {"return", "returns"}
 raises_set = {"raises", "raise", "except", "exception"}
 ignore_set = {"var", "ivar", "cvar", "vartype", "meta"}  # At this moment, it's ignored
 
+# Regex to find docstring sections (start with ':' and end before next ':' at start of line or end of string)
+isections = re.compile(r"(^:.*?)(?=^:|\Z)", flags=re.DOTALL | re.MULTILINE).finditer
+
 
 class ParsedDocsParam(typing.NamedTuple):
     section_key: str
@@ -25,6 +29,7 @@ class ParsedDocsParam(typing.NamedTuple):
 class ParsedDocsReturn(typing.NamedTuple):
     section_key: str
     return_type: str | None = None
+    description: str | None = None  # Only for ´:return:´
 
 
 class ParsedDocsRaise(typing.NamedTuple):
@@ -87,8 +92,8 @@ class Violations:
             return False
 
     @classmethod
-    def validate_params(cls, parsed: ParsedDocs, parameters: dict[str, str | None], /):
-        count = [param[1] for param in parsed.params if param[1]].count
+    def validate_params(cls, parsed, parameters, /):
+        count = collections.Counter(param[1] for param in parsed.params if param[1])
         for param in parsed.params:
             section_key, param_name, param_type = param
             type_hint = parameters.get(param_name)
@@ -102,22 +107,27 @@ class Violations:
                 yield Violations.DOC103, (param_type,)
             if param_type and type_hint and param_type != type_hint:
                 yield Violations.DOC104, (param_type, type_hint)
-            if param_name and count(param_name) > 1:
+            if param_name and count[param_name] > 1:
                 yield Violations.DOC105, (param_name,)
 
     @classmethod
-    def validate_return(cls, parsed: ParsedDocs, type_hint: str | None, has_returns: bool, /):
+    def validate_return(cls, parsed, type_hint, has_returns, /):
         if parsed.returns and not has_returns:
             yield Violations.DOC201, ()
         for _return in parsed.returns:
-            section_key, return_type = _return
-            if section_key == rtype_key and not return_type:
+            section_key, return_type, description = _return
+
+            if section_key in return_set and not description:  # ´:return:´ without description
+                print(section_key, return_set, description)
                 yield Violations.DOC002, (section_key,)
-            if return_type and not Violations.is_valid_type(return_type):
+            if section_key == rtype_key and not return_type:  # ´:rtype:´ without type
+                yield Violations.DOC002, (section_key,)
+
+            if return_type and not Violations.is_valid_type(return_type):  # Invalid return type
                 yield Violations.DOC202, (return_type,)
-            if return_type and type_hint and return_type == type_hint:
+            if return_type and type_hint and return_type == type_hint:  # Redundant return type
                 yield Violations.DOC203, (return_type,)
-            if return_type and type_hint and return_type != type_hint:
+            if return_type and type_hint and return_type != type_hint:  # Mismatched return type
                 yield Violations.DOC204, (return_type, type_hint)
 
     @classmethod
@@ -130,7 +140,7 @@ class Violations:
                 yield Violations.DOC301, (is_invalid,)
 
     @classmethod
-    def discover(cls, parsed: ParsedDocs, parameters: dict[str, str | None], has_returns: bool, /):
+    def discover(cls, parsed, parameters, has_returns, /):
         if parsed.code_ini_lineno and parsed.docs_end_lineno and parsed.code_ini_lineno - parsed.docs_end_lineno == 1:
             yield Violations.DOC003, ()
         yield from ((Violations.DOC001, (section_key,)) for section_key in parsed.invalid)
@@ -164,11 +174,11 @@ def parse_section_type(section_key, parts_a, parts_b, /):
     return ParsedDocsParam(section_key, param_name, param_type)
 
 
-def parse_section_rtype(section_key, parts_a, /):
-    if not parts_a:  # ´:rtype:´
+def parse_section_rtype(section_key, parts_b, /):
+    if not parts_b:  # ´:rtype:´
         return_type = None
     else:  # ´:rtype: [ReturnType]´
-        return_type = " ".join(parts_a)
+        return_type = " ".join(parts_b)
     return ParsedDocsReturn(section_key, return_type)
 
 
@@ -181,19 +191,20 @@ def parse_section_raise(section_key, parts_a, /):
     return ParsedDocsRaise(section_key, error_types)
 
 
-def parse_section_return(section_key, /):
-    # ´:return: [ReturnDescription]´
-    return ParsedDocsReturn(section_key)
+def parse_section_return(section_key, parts_a, parts_b, /):
+    if parts_b:  # ´:return: [ReturnDescription]´
+        description = " ".join(parts_b[1:])
+    else:
+        description = None
+    return ParsedDocsReturn(section_key, description=description)
 
 
-def itersections(docstring: str | None, /):
+def itersections(docstring, /):
     if docstring:
-        for match in re.finditer(r"(^:.*?)(?=^:|\Z)", docstring, flags=re.S | re.M | re.S):
-            if chunk := match.group(0):
-                yield chunk.strip()
+        yield from (chunk.strip() for match in isections(docstring) if (chunk := match.group(0)))
 
 
-def parse_docs(func_def: ast.FunctionDef, /):
+def parse_docs(func_def, /):
     params = []
     raises = []
     returns = []
@@ -215,10 +226,8 @@ def parse_docs(func_def: ast.FunctionDef, /):
         elif section_key in raises_set:
             raises.append(parse_section_raise(section_key, parts_a))
         elif section_key in return_set:
-            returns.append(parse_section_return(section_key))
-        elif section_key in ignore_set:
-            continue
-        else:
+            returns.append(parse_section_return(section_key, parts_a, parts_b))
+        elif section_key not in ignore_set:
             invalid.add(section_key)
 
     if docstring:
@@ -241,7 +250,7 @@ def parse_docs(func_def: ast.FunctionDef, /):
     )
 
 
-def func_has_returns(func_def: ast.FunctionDef, /):
+def func_has_returns(func_def, /):
     body = func_def.body
     if not body:
         return False
@@ -252,60 +261,62 @@ def func_has_returns(func_def: ast.FunctionDef, /):
     return False
 
 
-def get_args(func_def: ast.FunctionDef, /):
+def get_args(func_def, /):
     yield from func_def.args.posonlyargs  # Positional-only args
     yield from func_def.args.args  # Regular args
     yield from func_def.args.kwonlyargs  # Keyword-only args
     yield from filter(None, (func_def.args.vararg, func_def.args.kwarg))  # *args, **kwargs
 
 
-def get_params(func_def: ast.FunctionDef, /):
-    result = {}
+def get_params(func_def, /):
     for arg in get_args(func_def):
-        result[arg.arg] = ast.unparse(ann) if (ann := arg.annotation) else None
+        yield (arg.arg, ast.unparse(ann) if (ann := arg.annotation) else None)
     if func_def.returns:
-        result["return"] = ast.unparse(func_def.returns)
-    return result
+        yield ("return", ast.unparse(func_def.returns))
 
 
-def check_func(func_def: ast.FunctionDef, filename: str):
+def check_func(filename, func_def):
     lineno = func_def.lineno
     has_returns = func_has_returns(func_def)
-    params = get_params(func_def)
+    params = dict(get_params(func_def))
     parsed = parse_docs(func_def)
 
     for (code, msg), ctx in Violations.discover(parsed, params, has_returns):
         print(f"{filename}:{lineno}: [{code}] {msg.format(*ctx)}")
 
 
-def check_file(pathlike, /):
+def walk_file(pathlike, /):
     path = str(pathlike.resolve())
-    tree = ast.parse(pathlike.read_bytes(), filename=path)
+    try:
+        tree = ast.parse(pathlike.read_bytes(), filename=path)
+    except SyntaxError:
+        return  # Skip files with syntax errors
     for node in ast.walk(tree):
         if isinstance(node, ast.FunctionDef):
-            check_func(node, filename=path)
-        elif isinstance(node, ast.ClassDef):
-            for item in node.body:
-                if isinstance(item, ast.FunctionDef):
-                    check_func(item, path)
+            yield (path, node)
 
 
 def walk(paths, ignore_dirs, /):
     ignore_dirs = frozenset(ignore_dirs)
     for path in paths:
         if os.path.isfile(path) and path.endswith(".py"):
-            yield pathlib.Path(path)
+            yield from walk_file(pathlib.Path(path))
         elif os.path.isdir(path):
             for rpath in pathlib.Path(path).rglob("*.py"):
                 if not any(part in ignore_dirs for part in rpath.parts):  # Skip ignored dirs
-                    yield rpath
+                    yield from walk_file(rpath)
 
 
-if __name__ == "__main__":
+def run():
     ignore = [".venv", ".env", ".git", ".pytest_cache", ".ruff_cache", "__pycache__", "site-packages"]
     parser = argparse.ArgumentParser(description="Sphinx docstring checker")
     parser.add_argument("files", nargs="*", help="files or dirs to check", default=[os.getcwd()])
     parser.add_argument("--ignore", nargs="*", help="dirs to ignore", default=ignore)
+
     args = parser.parse_args()
-    for p in walk(args.files, args.ignore):
-        check_file(p)
+    for pathlike, func_def in walk(args.files, args.ignore):
+        check_func(pathlike, func_def)
+
+
+if __name__ == "__main__":
+    run()
