@@ -125,7 +125,7 @@ class Violations:
         for section_key, error_types in parsed.raises:
             if not error_types:
                 yield Violations.DOC002, (section_key,)
-            is_invalid = any(not Violations.is_valid_type(e) for e in error_types)
+            is_invalid = any(not Violations.is_valid_syntax(e) for e in error_types)
             if is_invalid:
                 yield Violations.DOC301, (is_invalid,)
 
