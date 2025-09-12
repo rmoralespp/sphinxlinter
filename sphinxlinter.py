@@ -118,7 +118,6 @@ class Violations:
             section_key, return_type, description = _return
 
             if section_key in return_set and not description:  # ´:return:´ without description
-                print(section_key, return_set, description)
                 yield Violations.DOC002, (section_key,)
             if section_key == rtype_key and not return_type:  # ´:rtype:´ without type
                 yield Violations.DOC002, (section_key,)
@@ -285,12 +284,9 @@ def check_func(filename, func_def):
         print(f"{filename}:{lineno}: [{code}] {msg.format(*ctx)}")
 
 
-def walk_file(pathlike, /):
+def walk_module(pathlike, /):
     path = str(pathlike.resolve())
-    try:
-        tree = ast.parse(pathlike.read_bytes(), filename=path)
-    except SyntaxError:
-        return  # Skip files with syntax errors
+    tree = ast.parse(pathlike.read_bytes(), filename=path)
     for node in ast.walk(tree):
         if isinstance(node, ast.FunctionDef):
             yield (path, node)
@@ -300,23 +296,23 @@ def walk(paths, ignore_dirs, /):
     ignore_dirs = frozenset(ignore_dirs)
     for path in paths:
         if os.path.isfile(path) and path.endswith(".py"):
-            yield from walk_file(pathlib.Path(path))
+            yield pathlib.Path(path)
         elif os.path.isdir(path):
             for rpath in pathlib.Path(path).rglob("*.py"):
                 if not any(part in ignore_dirs for part in rpath.parts):  # Skip ignored dirs
-                    yield from walk_file(rpath)
+                    yield rpath
 
 
-def run():
+def main():
     ignore = [".venv", ".env", ".git", ".pytest_cache", ".ruff_cache", "__pycache__", "site-packages"]
     parser = argparse.ArgumentParser(description="Sphinx docstring checker")
     parser.add_argument("files", nargs="*", help="files or dirs to check", default=[os.getcwd()])
     parser.add_argument("--ignore", nargs="*", help="dirs to ignore", default=ignore)
-
     args = parser.parse_args()
-    for pathlike, func_def in walk(args.files, args.ignore):
-        check_func(pathlike, func_def)
+    for path in walk(args.files, args.ignore):
+        for filename, func_def in walk_module(path):
+            check_func(filename, func_def)
 
 
 if __name__ == "__main__":
-    run()
+    main()
