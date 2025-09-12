@@ -1,6 +1,19 @@
 # sphinx-linter
 
-A lightweight Python linter for checking Sphinx docstrings
+A lightweight Python linter for checking Sphinx docstrings and ensuring they follow the recommended field list style:
+
+```
+"""[Summary]
+
+:param [ParamName]: [ParamDescription]
+:type [ParamName]: [ParamType]
+...
+:raises [ErrorType]: [ErrorDescription]
+...
+:return: [ReturnDescription]
+:rtype: [ReturnType]
+"""
+```
 
 Requirements
 - Python 3.8+
@@ -48,7 +61,7 @@ Notes
 |--------|--------------------------------------------------------|
 | DOC001 | Unknown docstring section                              |
 | DOC002 | Malformed section                                      |
-| DOC003 | Missing blank line after docstring   (TODO)            |
+| DOC003 | Missing blank line after docstring                     |
 | DOC004 | Missing blank line between summary and sections (TODO) |
 
 **DOC1xx: Parameter issues**

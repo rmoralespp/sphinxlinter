@@ -38,12 +38,17 @@ class ParsedDocs(typing.NamedTuple):
     raises: list[ParsedDocsRaise]
     invalid: set[str]  # invalid sections
 
+    docs: str | None = None  # The full docstring
+    docs_ini_lineno: int | None = None  # First line number of the docstring, None if no docstring
+    docs_end_lineno: int | None = None  # End line number of the docstring, None if no docstring
+    code_ini_lineno: int | None = None  # First line number of the code block after the docstring, None if no code
+
 
 class Violations:
     # DOC0xx: Docstring section issues
     DOC001 = ("DOC001", "Unknown docstring section ({!r})")
     DOC002 = ("DOC002", "Malformed section ({!r})")
-    DOC003 = ("DOC003", "Missing blank line after docstring")  # TODO
+    DOC003 = ("DOC003", "Missing blank line after docstring")
     DOC004 = ("DOC004", "Missing blank line between summary and sections")  # TODO
     # DOC1xx: Argument issues
     DOC101 = ("DOC101", "Parameter documented but not in signature ({!r})")
@@ -56,7 +61,7 @@ class Violations:
     DOC202 = ("DOC202", "Invalid return type syntax ({!r})")
     DOC203 = ("DOC203", "Return type already in signature ({!r})")
     DOC204 = ("DOC204", "Return type mismatch with annotation ({!r} != {!r})")
-    # DOC3xx: Raises issues
+    # DOC3xx: Raise issues
     DOC301 = ("DOC301", "Invalid exception type syntax ({!r})")
 
     @staticmethod
@@ -83,7 +88,7 @@ class Violations:
 
     @classmethod
     def validate_params(cls, parsed: ParsedDocs, parameters: dict[str, str | None], /):
-        params_names = [p[1] for p in parsed.params if p[1]]
+        count = [param[1] for param in parsed.params if param[1]].count
         for param in parsed.params:
             section_key, param_name, param_type = param
             type_hint = parameters.get(param_name)
@@ -97,7 +102,7 @@ class Violations:
                 yield Violations.DOC103, (param_type,)
             if param_type and type_hint and param_type != type_hint:
                 yield Violations.DOC104, (param_type, type_hint)
-            if param_name and params_names.count(param_name) > 1:
+            if param_name and count(param_name) > 1:
                 yield Violations.DOC105, (param_name,)
 
     @classmethod
@@ -126,6 +131,8 @@ class Violations:
 
     @classmethod
     def discover(cls, parsed: ParsedDocs, parameters: dict[str, str | None], has_returns: bool, /):
+        if parsed.code_ini_lineno and parsed.docs_end_lineno and parsed.code_ini_lineno - parsed.docs_end_lineno == 1:
+            yield Violations.DOC003, ()
         yield from ((Violations.DOC001, (section_key,)) for section_key in parsed.invalid)
         yield from cls.validate_params(parsed, parameters)
         yield from cls.validate_return(parsed, parameters.get("return"), has_returns)
@@ -179,17 +186,20 @@ def parse_section_return(section_key, /):
     return ParsedDocsReturn(section_key)
 
 
-def itersections(docstring, /):
-    for match in re.finditer(r"(^:.*?)(?=^:|\Z)", docstring, flags=re.S | re.M | re.S):
-        if chunk := match.group(0):
-            yield chunk.strip()
+def itersections(docstring: str | None, /):
+    if docstring:
+        for match in re.finditer(r"(^:.*?)(?=^:|\Z)", docstring, flags=re.S | re.M | re.S):
+            if chunk := match.group(0):
+                yield chunk.strip()
 
 
-def parse_docs(docstring, /):
+def parse_docs(func_def: ast.FunctionDef, /):
     params = []
     raises = []
     returns = []
     invalid = set()
+    docstring = ast.get_docstring(func_def)
+
     for section in itersections(docstring):
         a, _, b = section.lstrip(":").partition(":")
         b = b.splitlines()[0].strip() if b else ""  # Only first line
@@ -211,7 +221,19 @@ def parse_docs(docstring, /):
         else:
             invalid.add(section_key)
 
+    if docstring:
+        first = func_def.body[0]
+        docs_ini_lineno, docs_end_lineno = (first.lineno, first.end_lineno)
+        code_ini_lineno = func_def.body[1].lineno if len(func_def.body) > 1 else None
+    else:
+        docs_ini_lineno = docs_end_lineno = None
+        code_ini_lineno = func_def.body[0].lineno if func_def.body else None
+
     return ParsedDocs(
+        docs=docstring,
+        docs_ini_lineno=docs_ini_lineno,
+        docs_end_lineno=docs_end_lineno,
+        code_ini_lineno=code_ini_lineno,
         params=params,
         returns=returns,
         raises=raises,
@@ -219,7 +241,7 @@ def parse_docs(docstring, /):
     )
 
 
-def is_return(func_def: ast.FunctionDef, /):
+def func_has_returns(func_def: ast.FunctionDef, /):
     body = func_def.body
     if not body:
         return False
@@ -237,7 +259,7 @@ def get_args(func_def: ast.FunctionDef, /):
     yield from filter(None, (func_def.args.vararg, func_def.args.kwarg))  # *args, **kwargs
 
 
-def get_parameters(func_def: ast.FunctionDef, /):
+def get_params(func_def: ast.FunctionDef, /):
     result = {}
     for arg in get_args(func_def):
         result[arg.arg] = ast.unparse(ann) if (ann := arg.annotation) else None
@@ -246,15 +268,14 @@ def get_parameters(func_def: ast.FunctionDef, /):
     return result
 
 
-def check_func(func_def: ast.FunctionDef, name: str, /, filename: str):
-    docstring = ast.get_docstring(func_def) or ""
-    line_number = func_def.lineno
-    has_returns = is_return(func_def)
-    parameters = get_parameters(func_def)
-    parsed = parse_docs(docstring)
+def check_func(func_def: ast.FunctionDef, filename: str):
+    lineno = func_def.lineno
+    has_returns = func_has_returns(func_def)
+    params = get_params(func_def)
+    parsed = parse_docs(func_def)
 
-    for (code, message), value in Violations.discover(parsed, parameters, has_returns):
-        print(f"{filename}:{line_number}: [{code}] {message.format(*value)}")
+    for (code, msg), ctx in Violations.discover(parsed, params, has_returns):
+        print(f"{filename}:{lineno}: [{code}] {msg.format(*ctx)}")
 
 
 def check_file(pathlike, /):
@@ -262,28 +283,29 @@ def check_file(pathlike, /):
     tree = ast.parse(pathlike.read_bytes(), filename=path)
     for node in ast.walk(tree):
         if isinstance(node, ast.FunctionDef):
-            check_func(node, node.name, filename=path)
+            check_func(node, filename=path)
         elif isinstance(node, ast.ClassDef):
-            class_name = node.name
             for item in node.body:
                 if isinstance(item, ast.FunctionDef):
-                    check_func(item, f"{class_name}.{item.name}", path)
+                    check_func(item, path)
 
 
-def walk(paths, /):
-    ignore_dirs = frozenset((".venv", ".env", ".git", ".pytest_cache", ".ruff_cache", "__pycache__", "site-packages"))
+def walk(paths, ignore_dirs, /):
+    ignore_dirs = frozenset(ignore_dirs)
     for path in paths:
         if os.path.isfile(path) and path.endswith(".py"):
             yield pathlib.Path(path)
         elif os.path.isdir(path):
-            for path in pathlib.Path(path).rglob("*.py"):
-                if not any(part in ignore_dirs for part in path.parts):  # Skip ignored dirs
-                    yield path
+            for rpath in pathlib.Path(path).rglob("*.py"):
+                if not any(part in ignore_dirs for part in rpath.parts):  # Skip ignored dirs
+                    yield rpath
 
 
 if __name__ == "__main__":
+    ignore = [".venv", ".env", ".git", ".pytest_cache", ".ruff_cache", "__pycache__", "site-packages"]
     parser = argparse.ArgumentParser(description="Sphinx docstring checker")
     parser.add_argument("files", nargs="*", help="files or dirs to check", default=[os.getcwd()])
+    parser.add_argument("--ignore", nargs="*", help="dirs to ignore", default=ignore)
     args = parser.parse_args()
-    for file in walk(args.files):
-        check_file(file)
+    for p in walk(args.files, args.ignore):
+        check_file(p)
