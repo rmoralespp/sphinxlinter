@@ -97,23 +97,24 @@ class Violations:
         for param in parsed.params:
             section_key, param_name, param_type = param
             type_hint = parameters.get(param_name)
+            # :param:´ without name or ´:type:´ without type or name
             if not param_name or (section_key == ptype_key and not param_type):
                 yield Violations.DOC002, (section_key,)
-            if param_name and param_name not in parameters:
+            if param_name and param_name not in parameters:  # Documented but not in signature
                 yield Violations.DOC101, (param_name,)
-            if param_type and not Violations.is_valid_type(param_type):
+            if param_type and not Violations.is_valid_type(param_type):  # Invalid type syntax
                 yield Violations.DOC102, (param_type,)
-            if param_type and type_hint and param_type == type_hint:
+            if param_type and type_hint and param_type == type_hint:  # Redundant type
                 yield Violations.DOC103, (param_type,)
-            if param_type and type_hint and param_type != type_hint:
+            if param_type and type_hint and param_type != type_hint:  # Mismatched type
                 yield Violations.DOC104, (param_type, type_hint)
-            if param_name and count[param_name] > 1:
+            if param_name and count[param_name] > 1:  # Duplicate parameter
                 yield Violations.DOC105, (param_name,)
 
     @classmethod
     def validate_return(cls, parsed, type_hint, has_returns, /):
         if parsed.returns and not has_returns:
-            yield Violations.DOC201, ()
+            yield Violations.DOC201, ()  # Return documented but function has no return
         for _return in parsed.returns:
             section_key, return_type, description = _return
 
@@ -132,10 +133,10 @@ class Violations:
     @classmethod
     def validate_raises(cls, parsed, /):
         for section_key, error_types in parsed.raises:
-            if not error_types:
+            if not error_types:  # ´:raise:´ without error types
                 yield Violations.DOC002, (section_key,)
             is_invalid = any(not Violations.is_valid_syntax(e) for e in error_types)
-            if is_invalid:
+            if is_invalid:  # Invalid exception type syntax
                 yield Violations.DOC301, (is_invalid,)
 
     @classmethod
@@ -194,7 +195,7 @@ def parse_section_return(section_key, parts_a, parts_b, /):
     if parts_b:  # ´:return: [ReturnDescription]´
         description = " ".join(parts_b[1:])
     else:
-        description = None
+        description = None  # ´:return:´ without description
     return ParsedDocsReturn(section_key, description=description)
 
 
