@@ -5,8 +5,8 @@ A lightweight Python linter for checking Sphinx docstrings and ensuring they fol
 ```
 """[Summary]
 
-:param [ParamName]: [ParamDescription]
-:type [ParamName]: [ParamType]
+:param [ParamType] [ParamName]: [ParamDescription]
+:type [ParamName]: 
 ...
 :raises [ErrorType]: [ErrorDescription]
 ...
