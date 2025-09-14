@@ -39,7 +39,7 @@ Example output
 Format: `filename:line: [CODE] message` 
 
 Common violation codes:
-- `DOC0xx`:Docstring section issues  
+- `DOC0xx`: Docstring section issues  
 - `DOC1xx`: Parameter issues
 - `DOC2xx`: Return issues
 - `DOC3xx`: Raises issues
