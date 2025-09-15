@@ -5,8 +5,8 @@ A lightweight Python linter for checking Sphinx docstrings and ensuring they fol
 ```
 """[Summary]
 
-:param [ParamName]: [ParamDescription]
-:type [ParamName]: [ParamType]
+:param [ParamType] [ParamName]: [ParamDescription]
+:type [ParamName]: 
 ...
 :raises [ErrorType]: [ErrorDescription]
 ...
@@ -39,7 +39,7 @@ Example output
 Format: `filename:line: [CODE] message` 
 
 Common violation codes:
-- `DOC0xx`:Docstring section issues  
+- `DOC0xx`: Docstring section issues  
 - `DOC1xx`: Parameter issues
 - `DOC2xx`: Return issues
 - `DOC3xx`: Raises issues
