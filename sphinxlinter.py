@@ -6,8 +6,8 @@ import collections
 import os
 import pathlib
 import re
+import sys
 import typing
-from quopri import unhex
 
 # Docstring sections: https://www.sphinx-doc.org/en/master/usage/domains/python.html#info-field-lists
 ptype_key = "type"
@@ -202,12 +202,12 @@ def itersections(docstring, /):
         yield from (chunk.strip() for match in isections(docstring) if (chunk := match.group(0)))
 
 
-def parse_docs(func_def, /):
+def parse_docs(node, /):
     params = []
     raises = []
     returns = []
     invalid = set()
-    docstring = ast.get_docstring(func_def)
+    docstring = ast.get_docstring(node)
 
     for section in itersections(docstring):
         a, _, b = section.lstrip(":").partition(":")
@@ -229,12 +229,12 @@ def parse_docs(func_def, /):
             invalid.add(section_key)
 
     if docstring:
-        first = func_def.body[0]
+        first = node.body[0]
         docs_ini_lineno, docs_end_lineno = (first.lineno, first.end_lineno)
-        code_ini_lineno = func_def.body[1].lineno if len(func_def.body) > 1 else None
+        code_ini_lineno = node.body[1].lineno if len(node.body) > 1 else None
     else:
         docs_ini_lineno = docs_end_lineno = None
-        code_ini_lineno = func_def.body[0].lineno if func_def.body else None
+        code_ini_lineno = node.body[0].lineno if node.body else None
 
     return ParsedDocs(
         docs=docstring,
@@ -248,47 +248,98 @@ def parse_docs(func_def, /):
     )
 
 
-def func_has_returns(func_def, /):
-    body = func_def.body
-    if not body:
-        return False
-    klasses = (ast.Yield, ast.YieldFrom, ast.Return)
-    for node in body:
-        if isinstance(node, klasses) or any(isinstance(child, klasses) for child in ast.walk(node)):
-            return True
-    return False
+def has_return_or_yield(node, /):
+    """
+    Returns True if the given AST node (ast.FunctionDef or ast.AsyncFunctionDef)
+    contains a 'return', 'yield', or 'yield from' statement in its main body
+    (excluding nested functions).
+
+    :param ast.AST node: Root node to explore.
+    :rtype: bool
+    """
+
+    class ReturnYieldVisitor(ast.NodeVisitor):
+        def __init__(self):
+            self.found = False
+            self.depth = 0
+
+        def visit_FunctionDef(self, node):
+            if self.depth == 0:
+                self.depth += 1
+                self.generic_visit(node)
+                self.depth -= 1
+
+        def visit_AsyncFunctionDef(self, node):
+            if self.depth == 0:
+                self.depth += 1
+                self.generic_visit(node)
+                self.depth -= 1
+
+        def visit_Return(self, node):
+            if self.depth == 1:
+                self.found = True
+
+        def visit_Yield(self, node):
+            if self.depth == 1:
+                self.found = True
+
+        def visit_YieldFrom(self, node):
+            if self.depth == 1:
+                self.found = True
+
+    visitor = ReturnYieldVisitor()
+    visitor.visit(node)
+    return visitor.found
 
 
-def get_args(func_def, /):
-    yield from func_def.args.posonlyargs  # Positional-only args
-    yield from func_def.args.args  # Regular args
-    yield from func_def.args.kwonlyargs  # Keyword-only args
-    yield from filter(None, (func_def.args.vararg, func_def.args.kwarg))  # *args, **kwargs
+def get_args(node, /):
+    yield from node.args.posonlyargs  # Positional-only args
+    yield from node.args.args  # Regular args
+    yield from node.args.kwonlyargs  # Keyword-only args
+    yield from filter(None, (node.args.vararg, node.args.kwarg))  # *args, **kwargs
 
 
-def get_params(func_def, /):
-    for arg in get_args(func_def):
+def get_params(node, /):
+    for arg in get_args(node):
         yield (arg.arg, ast.unparse(ann) if (ann := arg.annotation) else None)
-    if func_def.returns:
-        yield ("return", ast.unparse(func_def.returns))
+    if node.returns:
+        yield ("return", ast.unparse(node.returns))
 
 
-def check_func(filename, func_def):
-    lineno = func_def.lineno
-    has_returns = func_has_returns(func_def)
-    params = dict(get_params(func_def))
-    parsed = parse_docs(func_def)
+def check_func(filename, node, /):
+    lineno = node.lineno
+    has_returns = has_return_or_yield(node)
+    params = dict(get_params(node))
+    parsed = parse_docs(node)
+    fmt = "{}:{}: [{}] {}".format
 
+    result = True
     for (code, msg), ctx in Violations.discover(parsed, params, has_returns):
-        print(f"{filename}:{lineno}: [{code}] {msg.format(*ctx)}")
+        print(fmt(filename, lineno, code, msg.format(*ctx)))
+        result = False
+
+    return result
 
 
-def walk_module(pathlike, /):
-    path = str(pathlike.resolve())
-    tree = ast.parse(pathlike.read_bytes(), filename=path)
-    for node in ast.walk(tree):
-        if isinstance(node, ast.FunctionDef):
-            yield (path, node)
+def walk_module(data, filename, /):
+    """
+    Yields each function node from the parsed "data" tree.
+
+    :param bytes data: Content to parse.
+    :param str filename: File name to use when printing messages.
+    :return: Each root node of every function/method.
+    :rtype: Iterator[ast.FunctionDef | ast.AsyncFunctionDef]
+    """
+
+    try:
+        tree = ast.parse(data, filename=filename)
+    except SyntaxError:
+        pass
+    else:
+        klasses = (ast.FunctionDef, ast.AsyncFunctionDef)
+        for node in ast.walk(tree):
+            if isinstance(node, klasses):
+                yield node
 
 
 def walk(paths, ignore_dirs, /):
@@ -306,12 +357,17 @@ def main():
     ignore = [".venv", ".env", ".git", ".pytest_cache", ".ruff_cache", "__pycache__", "site-packages"]
     parser = argparse.ArgumentParser(description="Sphinx docstring checker")
     parser.add_argument("files", nargs="*", help="files or dirs to check", default=[os.getcwd()])
-    parser.add_argument("--ignore", nargs="*", help="dirs to ignore", default=ignore)
+    parser.add_argument("--ignore", nargs="*", help="directories to ignore", default=ignore)
     args = parser.parse_args()
+    result = False
     for path in walk(args.files, args.ignore):
-        for filename, func_def in walk_module(path):
-            check_func(filename, func_def)
+        filename = str(path)
+        for node in walk_module(path.read_bytes(), filename):
+            if not check_func(filename, node):
+                result = True
+
+    return 1 if result else 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

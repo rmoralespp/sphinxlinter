@@ -18,13 +18,19 @@ class TestViolations:
         ("str", True),
         ("list[int]", True),
         ("dict[str, Any]", True),
-        ("2 + 2", True),  # NOTE: valid syntax, but not a type hint
-        ("NotFound", True),  # NOTE: valid syntax, but not a type hint
-        ("...", True),  # NOTE: valid syntax, but not a type hint
-        ("foo()", True),  # NOTE: valid syntax, but not a type hint
+        # valid syntax, but not a type hint
+        # --------------------------------------------------------------------
+        ("2 + 2", True),
+        ("NotFound", True),
+        ("...", True),
+        ("foo()", True),
+        # invalid syntax
+        # --------------------------------------------------------------------
         ("list[]", False),
         ("list[int", False),
         ("dict[int; Any]", False),
+        # --------------------------------------------------------------------
+        # keywords in type hints
         # --------------------------------------------------------------------
         *tuple(zip(ok_type_hints_kw, (True,) * len(ok_type_hints_kw))),
         *tuple(zip(ko_type_hints_kw, (False,) * len(ko_type_hints_kw))),
