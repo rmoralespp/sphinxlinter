@@ -7,6 +7,7 @@ import os
 import pathlib
 import re
 import typing
+from quopri import unhex
 
 # Docstring sections: https://www.sphinx-doc.org/en/master/usage/domains/python.html#info-field-lists
 ptype_key = "type"
@@ -78,13 +79,10 @@ class Violations:
             return False
 
     @classmethod
-    def is_valid_type(cls, value, /):
-        # Based on: (typing.ForwardRef.__init__)
-        if cls.is_valid_syntax(value):
-            if value.startswith('*'):
-                value = f'({value},)[0]'  # E.g. (*Ts,)[0] or (*tuple[int, int],)[0]
+    def is_valid_type_hint(cls, hint, /):
+        if hint:
             try:
-                compile(value, '<string>', 'eval')
+                ast.parse(f"x: {hint}")
                 return True
             except SyntaxError:
                 return False
@@ -102,7 +100,7 @@ class Violations:
                 yield Violations.DOC002, (section_key,)
             if param_name and param_name not in parameters:  # Documented but not in signature
                 yield Violations.DOC101, (param_name,)
-            if param_type and not Violations.is_valid_type(param_type):  # Invalid type syntax
+            if param_type and not Violations.is_valid_type_hint(param_type):  # Invalid type syntax
                 yield Violations.DOC102, (param_type,)
             if param_type and type_hint and param_type == type_hint:  # Redundant type
                 yield Violations.DOC103, (param_type,)
@@ -123,7 +121,7 @@ class Violations:
             if section_key == rtype_key and not return_type:  # ´:rtype:´ without type
                 yield Violations.DOC002, (section_key,)
 
-            if return_type and not Violations.is_valid_type(return_type):  # Invalid return type
+            if return_type and not Violations.is_valid_type_hint(return_type):  # Invalid return type
                 yield Violations.DOC202, (return_type,)
             if return_type and type_hint and return_type == type_hint:  # Redundant return type
                 yield Violations.DOC203, (return_type,)

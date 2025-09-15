@@ -1,0 +1,30 @@
+[project]
+name = "sphinx-linter"
+version = "0.0.0"
+description = "A lightweight Python linter for checking Sphinx docstrings."
+readme = "README.md"
+license-files = ["LICENSE"]
+keywords = ["python", "documentation", "linter", "eveloper-tools", "code-quality", "docstrings"]
+authors = [{ name = "rmoralespp", email = "rmoralespp@gmail.com" }]
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Internet",
+    "Topic :: Utilities",
+    "Topic :: Documentation",
+    "Topic :: Software Development :: Quality Assurance",
+]
+[dependency-groups]
+test = [
+    "pytest",
+]

@@ -88,3 +88,16 @@ Notes
 | Code   | Description                     |
 |--------|---------------------------------|
 | DOC301 | Invalid exception type syntax   |
+
+
+## Development
+
+### Running Unit Tests
+
+Install the development dependencies and run the tests:
+
+```
+pip install --group=test  # Install test dependencies
+pytest tests/ # Run all tests
+pytest --cov jsonl # Run tests with coverage
+```
