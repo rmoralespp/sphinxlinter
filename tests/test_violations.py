@@ -108,23 +108,27 @@ def foo(a):
     assert result == expected
 
 
-def test_DOC005():
-    content = '''
+@pytest.mark.parametrize("section", [":param str a: description",])
+def test_DOC005(section):
+    content = f'''
 def foo(a):
     """
     Title.
 
 
-    :param str a: description
+    {section}
     """
 
     pass
 '''
+
+    #  FIXME: section == ""
     expected = (
-        (3, "DOC005", "More than 1 blank line between the summary and the sections", ()),
+        (3, "DOC005", "More than 1 blank line after summary", ()),
     )
     result = tuple(sphinxlinter.checker(parse_content(content)))
     assert result == expected
+
 
 def test_DOC101():
     content = '''

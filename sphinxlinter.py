@@ -63,7 +63,7 @@ class Violations:
     DOC002 = ("DOC002", "Malformed section ({!r})")
     DOC003 = ("DOC003", "Missing blank line after docstring")
     DOC004 = ("DOC004", "Missing blank line between summary and sections")
-    DOC005 = ("DOC005", "More than 1 blank line between the summary and the sections")
+    DOC005 = ("DOC005", "More than 1 blank line after summary")
     # DOC1xx: Argument issues
     DOC101 = ("DOC101", "Parameter documented but not in signature ({!r})")
     DOC102 = ("DOC102", "Invalid parameter type syntax ({!r})")
@@ -104,11 +104,13 @@ class Violations:
         if parsed.summary:
             summary_lines = parsed.summary.splitlines()
             br_tail_count = sum(1 for _ in itertools.takewhile(operator.not_, reversed(summary_lines)))
-            # There are sections after the summary
+
             if br_tail_count == 0 and (parsed.params + parsed.returns + parsed.raises):
+                # Only applies if there are sections after the summary
                 yield Violations.DOC004, ()  # Missing blank line between summary and sections
-            elif br_tail_count > 1:
-                yield Violations.DOC005, ()  # More than 1 blank line between the summary and the sections
+
+            if br_tail_count > 1:  # More than 1 blank line after summary
+                yield Violations.DOC005, ()
 
     @classmethod
     def validate_params(cls, parsed, parameters, /):

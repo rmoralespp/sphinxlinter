@@ -60,13 +60,13 @@ Notes
 
 **DOC0xx: Docstring section issues**
 
-| Code   | Description                                                 |
-|--------|-------------------------------------------------------------|
-| DOC001 | Unknown docstring section                                   |
-| DOC002 | Malformed section                                           |
-| DOC003 | Missing blank line after docstring                          |
-| DOC004 | Missing blank line between summary and sections             |
-| DOC005 | More than 1 blank line between the summary and the sections |
+| Code   | Description                                     |
+|--------|-------------------------------------------------|
+| DOC001 | Unknown docstring section                       |
+| DOC002 | Malformed section                               |
+| DOC003 | Missing blank line after docstring              |
+| DOC004 | Missing blank line between summary and sections |
+| DOC005 | More than 1 blank line after summary            |
 
 **DOC1xx: Parameter issues**
 

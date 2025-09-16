@@ -31,6 +31,9 @@ test = [
     "pytest-cov",
 ]
 
+lint = [
+    "ruff",
+]
 
 [tool.pytest.ini_options]
 console_output_style = "classic"
