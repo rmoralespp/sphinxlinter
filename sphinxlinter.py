@@ -323,10 +323,10 @@ def checker(node, /):
     :rtype: typing.Iterator[tuple[int, str, dict]]
     """
 
-    lineno = node.lineno
     has_returns = has_return_or_yield(node)
     params = dict(get_params(node))
     parsed = parse_docs(node)
+    lineno = parsed.docs_ini_lineno
 
     for (code, msg), ctx in Violations.discover(parsed, params, has_returns):
         yield (lineno, code, msg, ctx)
