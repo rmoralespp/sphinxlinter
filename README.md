@@ -72,7 +72,7 @@ Notes
 | DOC102 | Invalid parameter type syntax             |
 | DOC103 | Parameter type already in signature       |
 | DOC104 | Parameter type mismatch with hint         |
-| DOC105 | Duplicate parameter                       |
+| DOC105 | Duplicated parameter                      |
 
 **DOC2xx: Return issues**
 
@@ -82,12 +82,14 @@ Notes
 | DOC202 | Invalid return type syntax                   |
 | DOC203 | Return type already in signature             |
 | DOC204 | Return type mismatch with annotation         |
+| DOC205 | Duplicated return section                    |
 
 **DOC3xx: Raises issues**
 
 | Code   | Description                     |
 |--------|---------------------------------|
 | DOC301 | Invalid exception type syntax   |
+| DOC305 | Duplicated exception type       |
 
 
 ## Development

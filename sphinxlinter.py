@@ -23,19 +23,22 @@ isections = re.compile(r"(^:.*?)(?=^:|\Z)", flags=re.DOTALL | re.MULTILINE).find
 
 class ParsedDocsParam(typing.NamedTuple):
     section_key: str
-    param_name: str | None = None
-    param_type: str | None = None
+    sep: bool  # True if ':' was present
+    param_name: str | None
+    param_type: str | None
 
 
 class ParsedDocsReturn(typing.NamedTuple):
     section_key: str
-    return_type: str | None = None
-    description: str | None = None  # Only for ´:return:´
+    sep: bool  # True if ':' was present
+    return_type: str | None
+    description: str | None  # Only for ´:return:´
 
 
 class ParsedDocsRaise(typing.NamedTuple):
     section_key: str
-    error_types: list[str] = []
+    sep: bool  # True if ':' was present
+    error_types: list[str]
 
 
 class ParsedDocs(typing.NamedTuple):
@@ -44,10 +47,10 @@ class ParsedDocs(typing.NamedTuple):
     raises: list[ParsedDocsRaise]
     invalid: set[str]  # invalid sections
 
-    docs: str | None = None  # The full docstring
-    docs_ini_lineno: int | None = None  # First line number of the docstring, None if no docstring
-    docs_end_lineno: int | None = None  # End line number of the docstring, None if no docstring
-    code_ini_lineno: int | None = None  # First line number of the code block after the docstring, None if no code
+    docs: str | None  # The full docstring
+    docs_ini_lineno: int | None  # First line number of the docstring, None if no docstring
+    docs_end_lineno: int | None  # End line number of the docstring, None if no docstring
+    code_ini_lineno: int | None  # First line number of the code block after the docstring, None if no code
 
 
 class Violations:
@@ -61,14 +64,16 @@ class Violations:
     DOC102 = ("DOC102", "Invalid parameter type syntax ({!r})")
     DOC103 = ("DOC103", "Parameter type already in signature ({!r})")
     DOC104 = ("DOC104", "Parameter type mismatch with hint ({!r} != {!r})")
-    DOC105 = ("DOC105", "Duplicate parameter ({!r})")
+    DOC105 = ("DOC105", "Duplicated parameter ({!r})")
     # DOC2xx: Return issues
     DOC201 = ("DOC201", "Return documented but function has no return")
     DOC202 = ("DOC202", "Invalid return type syntax ({!r})")
     DOC203 = ("DOC203", "Return type already in signature ({!r})")
     DOC204 = ("DOC204", "Return type mismatch with annotation ({!r} != {!r})")
+    DOC205 = ("DOC205", "Duplicated return section ({!r})")
     # DOC3xx: Raise issues
-    DOC301 = ("DOC301", "Invalid exception type syntax ({!r})")
+    DOC302 = ("DOC302", "Invalid exception type syntax ({!r})")
+    DOC305 = ("DOC305", "Duplicated exception type ({!r})")
 
     @staticmethod
     def is_valid_syntax(value, /):
@@ -93,49 +98,64 @@ class Violations:
     def validate_params(cls, parsed, parameters, /):
         count = collections.Counter(param[1] for param in parsed.params if param[1])
         for param in parsed.params:
-            section_key, param_name, param_type = param
-            type_hint = parameters.get(param_name)
-            # :param:´ without name or ´:type:´ without type or name
-            if not param_name or (section_key == ptype_key and not param_type):
+            section_key, sep, name, kind = param
+            type_hint = parameters.get(name)
+            # Malformed param: missing ':' or missing name/type when required
+            if not (sep and name) or (section_key == ptype_key and not kind):
                 yield Violations.DOC002, (section_key,)
-            if param_name and param_name not in parameters:  # Documented but not in signature
-                yield Violations.DOC101, (param_name,)
-            if param_type and not Violations.is_valid_type_hint(param_type):  # Invalid type syntax
-                yield Violations.DOC102, (param_type,)
-            if param_type and type_hint and param_type == type_hint:  # Redundant type
-                yield Violations.DOC103, (param_type,)
-            if param_type and type_hint and param_type != type_hint:  # Mismatched type
-                yield Violations.DOC104, (param_type, type_hint)
-            if param_name and count[param_name] > 1:  # Duplicate parameter
-                yield Violations.DOC105, (param_name,)
+            if name and name not in parameters:  # Documented but not in signature
+                yield Violations.DOC101, (name,)
+            if kind and not Violations.is_valid_type_hint(kind):  # Invalid type syntax
+                yield Violations.DOC102, (kind,)
+            if kind and type_hint and kind == type_hint:  # Redundant type
+                yield Violations.DOC103, (kind,)
+            if kind and type_hint and kind != type_hint:  # Mismatched type
+                yield Violations.DOC104, (kind, type_hint)
+            if name and count[name] > 1:  # Duplicated parameter
+                yield Violations.DOC105, (name,)
 
     @classmethod
     def validate_return(cls, parsed, type_hint, has_returns, /):
         if parsed.returns and not has_returns:
             yield Violations.DOC201, ()  # Return documented but function has no return
-        for _return in parsed.returns:
-            section_key, return_type, description = _return
 
+        bag = set()
+        for doc_return in parsed.returns:
+            section_key, sep, return_type, description = doc_return
+            # Malformed return: missing ':' or missing type/description when required
+            if not sep:  # Missing ':' separator
+                yield Violations.DOC002, (section_key,)
             if section_key in return_set and not description:  # ´:return:´ without description
                 yield Violations.DOC002, (section_key,)
             if section_key == rtype_key and not return_type:  # ´:rtype:´ without type
                 yield Violations.DOC002, (section_key,)
-
+            # Invalid or redundant return type checks
             if return_type and not Violations.is_valid_type_hint(return_type):  # Invalid return type
                 yield Violations.DOC202, (return_type,)
             if return_type and type_hint and return_type == type_hint:  # Redundant return type
                 yield Violations.DOC203, (return_type,)
             if return_type and type_hint and return_type != type_hint:  # Mismatched return type
                 yield Violations.DOC204, (return_type, type_hint)
+            # Duplicate return section
+            if section_key in bag:
+                yield Violations.DOC205, (section_key,)  # Duplicate return section
+            bag.add(section_key)
 
     @classmethod
     def validate_raises(cls, parsed, /):
-        for section_key, error_types in parsed.raises:
-            if not error_types:  # ´:raise:´ without error types
+        bag = set()
+        for section_key, sep, error_types in parsed.raises:
+            if not (sep or error_types):  # Missing ':' or missing error types
                 yield Violations.DOC002, (section_key,)
+
             is_invalid = any(not Violations.is_valid_syntax(e) for e in error_types)
             if is_invalid:  # Invalid exception type syntax
-                yield Violations.DOC301, (is_invalid,)
+                yield Violations.DOC302, (is_invalid,)
+
+            for error_type in error_types:
+                if error_type in bag:  # Duplicate exception type
+                    yield Violations.DOC305, (error_type,)
+                bag.add(error_type)
 
     @classmethod
     def discover(cls, parsed, parameters, has_returns, /):
@@ -147,7 +167,7 @@ class Violations:
         yield from cls.validate_raises(parsed)
 
 
-def parse_section_param(section_key, parts_a, /):
+def parse_section_param(section_key, sep, parts_a, /):
     if len(parts_a) == 1:  # ´:param:´
         param_name = None
         param_type = None
@@ -157,44 +177,44 @@ def parse_section_param(section_key, parts_a, /):
     else:  # ´:param [ParamType] [ParamName]:´
         param_type = " ".join(parts_a[1:-1])  # unsplit type
         param_name = parts_a[-1]
-    return ParsedDocsParam(section_key, param_name, param_type)
+    return ParsedDocsParam(section_key, sep, param_name, param_type)
 
 
-def parse_section_type(section_key, parts_a, parts_b, /):
-    if len(parts_a) == 1:  # ´:type´
+def parse_section_type(section_key, sep, parts_a, parts_b, /):
+    if len(parts_a) == 1:  # ´:type:´
         param_name = None
-    else:  # >=2   ´:type [ParamName]´
+    else:  # >=2   ´:type [ParamName]:´
         param_name = " ".join(parts_a[1:])
-    if not parts_b:  # ´:type [ParamName]´
-        param_type = None
-    else:  # ´:type [ParamName]: [ParamType]´
+
+    if parts_b:  # ´:type [ParamName]: [ParamType]´
         param_type = " ".join(parts_b)
-    return ParsedDocsParam(section_key, param_name, param_type)
+    else:  # ´:type [ParamName]:´ (without type)
+        param_type = None
+    return ParsedDocsParam(section_key, sep, param_name, param_type)
 
 
-def parse_section_rtype(section_key, parts_b, /):
-    if not parts_b:  # ´:rtype:´
-        return_type = None
-    else:  # ´:rtype: [ReturnType]´
+def parse_section_rtype(section_key, sep, parts_b, /):
+    if parts_b:  # ´:rtype: [ReturnType]´
         return_type = " ".join(parts_b)
-    return ParsedDocsReturn(section_key, return_type)
+    else:  # ´:rtype:´ (without type)
+        return_type = None
+    return ParsedDocsReturn(section_key, sep, return_type, None)
 
 
-def parse_section_raise(section_key, parts_a, /):
-    # ´:raise [ErrorTypes]: [ErrorDescription]´
-    if len(parts_a) == 1:
+def parse_section_raise(section_key, sep, parts_a, /):
+    if len(parts_a) == 1:  # ´:raise [ErrorType]: [ErrorDescription]´
         error_types = []
-    else:
+    else:  # >=2  ´:raise [ErrorType1, ErrorType2]: [ErrorDescription]´
         error_types = "".join(parts_a[1:]).split(",")  # commas separate multiple error types
-    return ParsedDocsRaise(section_key, error_types)
+    return ParsedDocsRaise(section_key, sep, error_types)
 
 
-def parse_section_return(section_key, parts_a, parts_b, /):
+def parse_section_return(section_key, sep, parts_a, parts_b, /):
     if parts_b:  # ´:return: [ReturnDescription]´
-        description = " ".join(parts_b[1:])
-    else:
-        description = None  # ´:return:´ without description
-    return ParsedDocsReturn(section_key, description=description)
+        description = " ".join(parts_b)
+    else:  # ´:return:´ (without description)
+        description = None
+    return ParsedDocsReturn(section_key, sep, None, description)
 
 
 def itersections(docstring, /):
@@ -210,21 +230,22 @@ def parse_docs(node, /):
     docstring = ast.get_docstring(node)
 
     for section in itersections(docstring):
-        a, _, b = section.lstrip(":").partition(":")
-        b = b.splitlines()[0].strip() if b else ""  # Only first line
+        a, sep, b = section.lstrip(":").partition(":")
+        sep = bool(sep)  # True if ':' was present
+        b = b.splitlines()[0].strip() if (b := b.strip()) else ""  # Only first line of description is relevant.
         parts_a = a.split()
         parts_b = b.split()
         section_key = parts_a[0].lower()
         if section_key in param_set:
-            params.append(parse_section_param(section_key, parts_a))
+            params.append(parse_section_param(section_key, sep, parts_a))
         elif section_key == ptype_key:
-            params.append(parse_section_type(section_key, parts_a, parts_b))
+            params.append(parse_section_type(section_key, sep, parts_a, parts_b))
         elif section_key in rtype_key:
-            returns.append(parse_section_rtype(section_key, parts_b))
+            returns.append(parse_section_rtype(section_key, sep, parts_b))
         elif section_key in raises_set:
-            raises.append(parse_section_raise(section_key, parts_a))
+            raises.append(parse_section_raise(section_key, sep, parts_a))
         elif section_key in return_set:
-            returns.append(parse_section_return(section_key, parts_a, parts_b))
+            returns.append(parse_section_return(section_key, sep, parts_a, parts_b))
         elif section_key not in ignore_set:
             invalid.add(section_key)
 
