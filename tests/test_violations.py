@@ -66,7 +66,7 @@ def foo(a):
 
     {value}
     """
-    
+
     return a
 '''
     expected = (
@@ -132,9 +132,10 @@ def test_DOC103():
 def foo(a:int):
     """
     Title.
+
     :param int a: description
-    """ 
-    
+    """
+
     pass
 '''
     expected = (
@@ -149,6 +150,7 @@ def test_DOC104():
 def foo(a:int):
     """
     Title.
+
     :param str a: description
     """ 
 
@@ -172,14 +174,152 @@ def test_DOC105(repeated):
 def foo(a):
     """
     Title.
+
     :param int a: description
     {repeated}
-    """ 
+    """
 
     pass
 '''
     expected = (
         (2, 'DOC105', 'Duplicated parameter ({!r})', ('a',)),
+    )
+    result = tuple(sphinxlinter.checker(parse_content(content)))
+    assert result == expected
+
+
+@pytest.mark.parametrize("value", [":return: description", ":rtype: int"])
+def test_DOC201(value):
+    content = f'''
+def foo():
+    """
+    Title.
+
+    {value}
+    """
+
+    pass
+'''
+
+    expected = (
+        (2, 'DOC201', 'Return documented but function has no return', ()),
+    )
+    result = tuple(sphinxlinter.checker(parse_content(content)))
+    assert result == expected
+
+
+def test_DOC202():
+    content = '''
+def foo():
+    """
+    Title.
+
+    :rtype: list[int,
+    """
+
+    return [1]
+'''
+
+    expected = (
+        (2, 'DOC202', 'Invalid return type syntax ({!r})', ('list[int,',)),
+    )
+    result = tuple(sphinxlinter.checker(parse_content(content)))
+    assert result == expected
+
+
+def test_DOC203():
+    content = '''
+def foo() -> int:
+    """
+    Title.
+
+    :rtype: int
+    """
+
+    return 1
+'''
+
+    expected = (
+        ((2, 'DOC203', 'Return type already in signature ({!r})', ('int',)),)
+    )
+    result = tuple(sphinxlinter.checker(parse_content(content)))
+    assert result == expected
+
+
+def test_DOC204():
+    content = '''
+def foo() -> int:
+    """
+    Title.
+
+    :rtype: str
+    """
+
+    return 1
+'''
+
+    expected = (
+        (2, 'DOC204', 'Return type mismatch with annotation ({!r} != {!r})',  ('str', 'int')),
+    )
+    result = tuple(sphinxlinter.checker(parse_content(content)))
+    assert result == expected
+
+
+@pytest.mark.parametrize("key, repeated", [("rtype", ":rtype: int"), ("return", ":return: description)")])
+def test_DOC205(key, repeated):
+    content = f'''
+def foo():
+    """
+    Title.
+
+    :rtype: int
+    :return: description
+    {repeated}
+    """ 
+
+    return 1
+'''
+    expected = (
+        ((2, 'DOC205', 'Duplicated return section ({!r})', (key,)),)
+    )
+    result = tuple(sphinxlinter.checker(parse_content(content)))
+    assert result == expected
+
+
+def test_DOC302():
+    content = '''
+def foo():
+    """
+    Title.
+
+    :raise except: description
+    """
+
+    pass
+'''
+
+    expected = (
+        ((2, 'DOC302', 'Invalid exception type syntax ({!r})', (True,)),)
+    )
+    result = tuple(sphinxlinter.checker(parse_content(content)))
+    assert result == expected
+
+
+def test_DOC305():
+    content = '''
+def foo():
+    """
+    Title.
+
+    :raises ValueError: description
+    :raises TypeError, ValueError: description
+    """
+
+    pass
+'''
+
+    expected = (
+        ((2, 'DOC305', 'Duplicated exception type ({!r})', ('ValueError',)),)
     )
     result = tuple(sphinxlinter.checker(parse_content(content)))
     assert result == expected
