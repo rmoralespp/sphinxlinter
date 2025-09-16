@@ -1,4 +1,4 @@
-# sphinx-linter
+# sphinxlinter
 
 A lightweight Python linter for checking Sphinx docstrings and ensuring they follow the recommended field list style:
 
