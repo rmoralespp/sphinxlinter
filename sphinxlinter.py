@@ -2,7 +2,6 @@
 
 import argparse
 import ast
-import collections
 import os
 import pathlib
 import re
@@ -45,7 +44,7 @@ class ParsedDocs(typing.NamedTuple):
     params: list[ParsedDocsParam]
     returns: list[ParsedDocsReturn]
     raises: list[ParsedDocsRaise]
-    invalid: set[str]  # invalid sections
+    invalid: list[str]  # invalid sections
 
     docs: str | None  # The full docstring
     docs_ini_lineno: int | None  # First line number of the docstring, None if no docstring
@@ -96,7 +95,7 @@ class Violations:
 
     @classmethod
     def validate_params(cls, parsed, parameters, /):
-        count = collections.Counter(param[1] for param in parsed.params if param[1])
+        bag = set()
         for param in parsed.params:
             section_key, sep, name, kind = param
             type_hint = parameters.get(name)
@@ -111,8 +110,10 @@ class Violations:
                 yield Violations.DOC103, (kind,)
             if kind and type_hint and kind != type_hint:  # Mismatched type
                 yield Violations.DOC104, (kind, type_hint)
-            if name and count[name] > 1:  # Duplicated parameter
+            if name and name in bag:  # Duplicated parameter
                 yield Violations.DOC105, (name,)
+            if name:
+                bag.add(name)
 
     @classmethod
     def validate_return(cls, parsed, type_hint, has_returns, /):
@@ -125,9 +126,9 @@ class Violations:
             # Malformed return: missing ':' or missing type/description when required
             if not sep:  # Missing ':' separator
                 yield Violations.DOC002, (section_key,)
-            if section_key in return_set and not description:  # ´:return:´ without description
+            elif section_key in return_set and not description:  # ´:return:´ without description
                 yield Violations.DOC002, (section_key,)
-            if section_key == rtype_key and not return_type:  # ´:rtype:´ without type
+            elif section_key == rtype_key and not return_type:  # ´:rtype:´ without type
                 yield Violations.DOC002, (section_key,)
             # Invalid or redundant return type checks
             if return_type and not Violations.is_valid_type_hint(return_type):  # Invalid return type
@@ -145,7 +146,7 @@ class Violations:
     def validate_raises(cls, parsed, /):
         bag = set()
         for section_key, sep, error_types in parsed.raises:
-            if not (sep or error_types):  # Missing ':' or missing error types
+            if not (sep and error_types):  # Missing ':' or missing error types
                 yield Violations.DOC002, (section_key,)
 
             is_invalid = any(not Violations.is_valid_syntax(e) for e in error_types)
@@ -223,10 +224,10 @@ def itersections(docstring, /):
 
 
 def parse_docs(node, /):
-    params = []
-    raises = []
-    returns = []
-    invalid = set()
+    params = list()
+    raises = list()
+    returns = list()
+    invalid = list()
     docstring = ast.get_docstring(node)
 
     for section in itersections(docstring):
@@ -247,7 +248,7 @@ def parse_docs(node, /):
         elif section_key in return_set:
             returns.append(parse_section_return(section_key, sep, parts_a, parts_b))
         elif section_key not in ignore_set:
-            invalid.add(section_key)
+            invalid.append(section_key)
 
     if docstring:
         first = node.body[0]
@@ -276,6 +277,7 @@ def has_return_or_yield(node, /):
     (excluding nested functions).
 
     :param ast.AST node: Root node to explore.
+    :return: Whether the function has either "return" or "yield".
     :rtype: bool
     """
 
@@ -284,33 +286,50 @@ def has_return_or_yield(node, /):
             self.found = False
             self.depth = 0
 
-        def visit_FunctionDef(self, node):
+        def visit_nested(self, node):
             if self.depth == 0:
                 self.depth += 1
                 self.generic_visit(node)
                 self.depth -= 1
+
+        def visit_FunctionDef(self, node):
+            self.visit_nested(node)
 
         def visit_AsyncFunctionDef(self, node):
-            if self.depth == 0:
-                self.depth += 1
-                self.generic_visit(node)
-                self.depth -= 1
+            self.visit_nested(node)
 
         def visit_Return(self, node):
-            if self.depth == 1:
-                self.found = True
+            self.found = True
 
         def visit_Yield(self, node):
-            if self.depth == 1:
-                self.found = True
+            self.found = True
 
         def visit_YieldFrom(self, node):
-            if self.depth == 1:
-                self.found = True
+            self.found = True
 
     visitor = ReturnYieldVisitor()
     visitor.visit(node)
     return visitor.found
+
+
+def checker(node, /):
+    """
+    Returns True if the given AST node (ast.FunctionDef or ast.AsyncFunctionDef)
+    contains a 'return', 'yield', or 'yield from' statement in its main body
+    (excluding nested functions).
+
+    :param ast.AST node: Root node to explore.
+    :return: Generator with data of each violation.
+    :rtype: typing.Iterator[tuple[int, str, dict]]
+    """
+
+    lineno = node.lineno
+    has_returns = has_return_or_yield(node)
+    params = dict(get_params(node))
+    parsed = parse_docs(node)
+
+    for (code, msg), ctx in Violations.discover(parsed, params, has_returns):
+        yield (lineno, code, msg, ctx)
 
 
 def get_args(node, /):
@@ -327,15 +346,10 @@ def get_params(node, /):
         yield ("return", ast.unparse(node.returns))
 
 
-def check_func(filename, node, /):
-    lineno = node.lineno
-    has_returns = has_return_or_yield(node)
-    params = dict(get_params(node))
-    parsed = parse_docs(node)
+def check_node(filename, node, /):
     fmt = "{}:{}: [{}] {}".format
-
     result = True
-    for (code, msg), ctx in Violations.discover(parsed, params, has_returns):
+    for lineno, code, msg, ctx in checker(node):
         print(fmt(filename, lineno, code, msg.format(*ctx)))
         result = False
 
@@ -384,7 +398,7 @@ def main():
     for path in walk(args.files, args.ignore):
         filename = str(path)
         for node in walk_module(path.read_bytes(), filename):
-            if not check_func(filename, node):
+            if not check_node(filename, node):
                 result = True
 
     return 1 if result else 0
