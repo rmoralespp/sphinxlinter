@@ -27,4 +27,6 @@ classifiers = [
 [dependency-groups]
 test = [
     "pytest",
+    "coverage",
+    "pytest-cov",
 ]
