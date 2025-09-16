@@ -88,7 +88,7 @@ Notes
 
 | Code   | Description                     |
 |--------|---------------------------------|
-| DOC301 | Invalid exception type syntax   |
+| DOC302 | Invalid exception type syntax   |
 | DOC305 | Duplicated exception type       |
 
 
