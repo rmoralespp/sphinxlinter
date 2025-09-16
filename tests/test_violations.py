@@ -91,6 +91,41 @@ def foo():
     assert result == expected
 
 
+def test_DOC004():
+    content = '''
+def foo(a):
+    """
+    Title.
+    :param str a: description
+    """
+
+    pass
+'''
+    expected = (
+        (3, "DOC004", "Missing blank line between summary and sections", ()),
+    )
+    result = tuple(sphinxlinter.checker(parse_content(content)))
+    assert result == expected
+
+
+def test_DOC005():
+    content = '''
+def foo(a):
+    """
+    Title.
+
+
+    :param str a: description
+    """
+
+    pass
+'''
+    expected = (
+        (3, "DOC005", "More than 1 blank line between the summary and the sections", ()),
+    )
+    result = tuple(sphinxlinter.checker(parse_content(content)))
+    assert result == expected
+
 def test_DOC101():
     content = '''
 def foo():

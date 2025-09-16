@@ -30,3 +30,11 @@ test = [
     "coverage",
     "pytest-cov",
 ]
+
+
+[tool.pytest.ini_options]
+console_output_style = "classic"
+addopts = "--import-mode=importlib"
+testpaths = [
+    "tests",
+]

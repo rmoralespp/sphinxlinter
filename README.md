@@ -1,6 +1,9 @@
 # sphinxlinter
 
-A lightweight Python linter for checking Sphinx docstrings and ensuring they follow the recommended field list style:
+A lightweight Python linter for checking Sphinx docstrings and ensuring they follow the recommended field list style 
+and are consistent with function signatures.
+
+In general, a typical Sphinx docstring has the following format ([ref](https://sphinx-rtd-tutorial.readthedocs.io/en/latest/docstrings.html)):
 
 ```
 """[Summary]
@@ -57,12 +60,13 @@ Notes
 
 **DOC0xx: Docstring section issues**
 
-| Code   | Description                                            |
-|--------|--------------------------------------------------------|
-| DOC001 | Unknown docstring section                              |
-| DOC002 | Malformed section                                      |
-| DOC003 | Missing blank line after docstring                     |
-| DOC004 | Missing blank line between summary and sections (TODO) |
+| Code   | Description                                                 |
+|--------|-------------------------------------------------------------|
+| DOC001 | Unknown docstring section                                   |
+| DOC002 | Malformed section                                           |
+| DOC003 | Missing blank line after docstring                          |
+| DOC004 | Missing blank line between summary and sections             |
+| DOC005 | More than 1 blank line between the summary and the sections |
 
 **DOC1xx: Parameter issues**
 

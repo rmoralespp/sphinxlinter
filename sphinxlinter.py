@@ -2,6 +2,8 @@
 
 import argparse
 import ast
+import itertools
+import operator
 import os
 import pathlib
 import re
@@ -16,8 +18,10 @@ return_set = {"return", "returns"}
 raises_set = {"raises", "raise", "except", "exception"}
 ignore_set = {"var", "ivar", "cvar", "vartype", "meta"}  # At this moment, it's ignored
 
-# Regex to find docstring sections (start with ':' and end before next ':' at start of line or end of string)
-isections = re.compile(r"(^:.*?)(?=^:|\Z)", flags=re.DOTALL | re.MULTILINE).finditer
+# Summary (everything before the first section or the end of the string)
+summary_regex = re.compile(r'^(.*?)(?=^:|\Z)', flags=re.DOTALL | re.MULTILINE)
+# Section (start with ':' and end before next ':' at start of line or end of string)
+section_regex = re.compile(r'(^:.*?)(?=^:|\Z)', flags=re.DOTALL | re.MULTILINE)
 
 
 class ParsedDocsParam(typing.NamedTuple):
@@ -41,6 +45,7 @@ class ParsedDocsRaise(typing.NamedTuple):
 
 
 class ParsedDocs(typing.NamedTuple):
+    summary: str | None  # The summary section (before the first section)
     params: list[ParsedDocsParam]
     returns: list[ParsedDocsReturn]
     raises: list[ParsedDocsRaise]
@@ -57,7 +62,8 @@ class Violations:
     DOC001 = ("DOC001", "Unknown docstring section ({!r})")
     DOC002 = ("DOC002", "Malformed section ({!r})")
     DOC003 = ("DOC003", "Missing blank line after docstring")
-    DOC004 = ("DOC004", "Missing blank line between summary and sections")  # TODO
+    DOC004 = ("DOC004", "Missing blank line between summary and sections")
+    DOC005 = ("DOC005", "More than 1 blank line between the summary and the sections")
     # DOC1xx: Argument issues
     DOC101 = ("DOC101", "Parameter documented but not in signature ({!r})")
     DOC102 = ("DOC102", "Invalid parameter type syntax ({!r})")
@@ -92,6 +98,17 @@ class Violations:
                 return False
         else:
             return False
+
+    @classmethod
+    def validate_summary(cls, parsed, /):
+        if parsed.summary:
+            summary_lines = parsed.summary.splitlines()
+            br_tail_count = sum(1 for _ in itertools.takewhile(operator.not_, reversed(summary_lines)))
+            # There are sections after the summary
+            if br_tail_count == 0 and (parsed.params + parsed.returns + parsed.raises):
+                yield Violations.DOC004, ()  # Missing blank line between summary and sections
+            elif br_tail_count > 1:
+                yield Violations.DOC005, ()  # More than 1 blank line between the summary and the sections
 
     @classmethod
     def validate_params(cls, parsed, parameters, /):
@@ -162,6 +179,8 @@ class Violations:
     def discover(cls, parsed, parameters, has_returns, /):
         if parsed.code_ini_lineno and parsed.docs_end_lineno and parsed.code_ini_lineno - parsed.docs_end_lineno == 1:
             yield Violations.DOC003, ()
+
+        yield from cls.validate_summary(parsed)
         yield from ((Violations.DOC001, (section_key,)) for section_key in parsed.invalid)
         yield from cls.validate_params(parsed, parameters)
         yield from cls.validate_return(parsed, parameters.get("return"), has_returns)
@@ -220,7 +239,14 @@ def parse_section_return(section_key, sep, parts_a, parts_b, /):
 
 def itersections(docstring, /):
     if docstring:
-        yield from (chunk.strip() for match in isections(docstring) if (chunk := match.group(0)))
+        yield from (chunk.strip() for match in section_regex.finditer(docstring) if (chunk := match.group(0)))
+
+
+def get_summary(docstring, /):
+    if docstring and (match := summary_regex.search(docstring)):
+        return match.group(0)
+    else:
+        return None
 
 
 def parse_docs(node, /):
@@ -251,14 +277,17 @@ def parse_docs(node, /):
             invalid.append(section_key)
 
     if docstring:
+        summary = get_summary(docstring)
         first = node.body[0]
         docs_ini_lineno, docs_end_lineno = (first.lineno, first.end_lineno)
         code_ini_lineno = node.body[1].lineno if len(node.body) > 1 else None
     else:
+        summary = None
         docs_ini_lineno = docs_end_lineno = None
         code_ini_lineno = node.body[0].lineno if node.body else None
 
     return ParsedDocs(
+        summary=summary,
         docs=docstring,
         docs_ini_lineno=docs_ini_lineno,
         docs_end_lineno=docs_end_lineno,
