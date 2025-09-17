@@ -31,7 +31,7 @@ jobs:
       - name: Run tests and collect coverage
         run: pytest --cov sphinxlinter
       - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v4.0.1
+        uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           slug: rmoralespp/sphinxlinter
