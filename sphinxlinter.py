@@ -119,7 +119,7 @@ class Violations:
         elif "ALL" in enable:
             self.select = dict.fromkeys(self.SELECT, True)
         else:
-            self.select = enable or self.SELECT
+            self.select = dict.fromkeys(enable, True) if enable else self.SELECT
 
         # Apply disable after enable, so disable has precedence
         if disable is not None:
