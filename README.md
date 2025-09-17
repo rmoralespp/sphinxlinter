@@ -1,6 +1,6 @@
 # sphinxlinter
 
-[![pypi](https://img.shields.io/pypi/v/sphinxlinter.svg)](https://pypi.python.org/pypi/sphinxlinter)
+[![pypi](https://img.shields.io/pypi/v/sphinx-linter.svg)](https://pypi.python.org/pypi/sphinx-linter)
 [![CI](https://github.com/rmoralespp/sphinxlinter/workflows/CI/badge.svg)](https://github.com/rmoralespp/sphinxlinter/actions?query=event%3Arelease+workflow%3ACI)
 [![codecov](https://codecov.io/gh/rmoralespp/sphinxlinter/branch/main/graph/badge.svg)](https://app.codecov.io/gh/rmoralespp/sphinxlinter)
 [![license](https://img.shields.io/github/license/rmoralespp/sphinxlinter.svg)](https://github.com/rmoralespp/sphinxlinter/blob/main/LICENSE)
@@ -50,7 +50,7 @@ python sphinxlinter.py path/to/file.py path/to/package_dir
 To install **sphinxlinter** using `pip`, run the following command:
 
 ```bash
-pip install sphinxlinter
+pip install sphinx-linter
 ```
 
 ## Usage from command line (CLI) if installed
