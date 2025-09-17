@@ -48,7 +48,7 @@ Common violation codes:
 - `DOC3xx`: Raises issues
 
 How it works (brief)
-- Parses Python AST to find `FunctionDef` and `ClassDef` members.  
+- Parses Python AST to find `FunctionDef` members.  
 - Extracts signatures and docstring sections [Sphinx field lists](https://www.sphinx-doc.org/en/master/usage/domains/python.html#info-field-lists).  
 - Validates section presence, syntax and consistency with type annotations.
 
