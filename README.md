@@ -67,6 +67,13 @@ Run on specific files or directories
 sphinxlinter path/to/file_or_dir ...
 ```
 
+## Optional arguments
+
+* **--help:** Show help message and exit
+* **--enable:** Whitespace-separated list of violation codes to enable (or ALL, to enable all), by default all are enabled.
+* **--disable:** Whitespace-separated list of violation codes to disable, by default none are disabled. **Takes precedence over --enable**
+* **--ignore:** Directories to ignore from analysis
+
 ## Violation reporting
 
 Example output

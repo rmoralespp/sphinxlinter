@@ -1,5 +1,7 @@
 ## Releases
 
+- **Added:** Arguments "--enable" and "--disable" to control specific checks.
+
 ### v0.0.2 (2025-09-17)
 
 - **Fixed:** Installation instructions in README.md.

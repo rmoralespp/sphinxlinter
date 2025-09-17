@@ -88,6 +88,43 @@ class Violations:
     DOC302 = ("DOC302", "Invalid exception type syntax ({!r})")
     DOC305 = ("DOC305", "Duplicated exception type ({!r})")
 
+    # Default enabled/disabled rules
+    SELECT = {
+        DOC001[0]: True,
+        DOC002[0]: True,
+        DOC003[0]: True,
+        DOC004[0]: True,
+        DOC005[0]: True,
+        DOC006[0]: True,
+
+        DOC101[0]: True,
+        DOC102[0]: True,
+        DOC103[0]: True,
+        DOC104[0]: True,
+        DOC105[0]: True,
+
+        DOC201[0]: True,
+        DOC202[0]: True,
+        DOC203[0]: True,
+        DOC204[0]: True,
+        DOC205[0]: True,
+
+        DOC302[0]: True,
+        DOC305[0]: True,
+    }
+
+    def __init__(self, /, *, enable=None, disable=None):
+        if enable is None:
+            self.select = self.SELECT
+        elif "ALL" in enable:
+            self.select = dict.fromkeys(self.SELECT, True)
+        else:
+            self.select = enable or self.SELECT
+
+        # Apply disable after enable, so disable has precedence
+        if disable is not None:
+            self.select |= dict.fromkeys(disable, False)
+
     @staticmethod
     def is_valid_syntax(value, /):
         try:
@@ -114,12 +151,12 @@ class Violations:
             hits = empty_lines_regex.finditer(text)
             present = next(filter(None, hits), None)
             if present:
-                yield Violations.DOC005, ()
+                yield cls.DOC005, ()
 
             hits = trailing_regex.finditer(text)
             present = next(filter(None, hits), None)
             if present:
-                yield Violations.DOC006, ()
+                yield cls.DOC006, ()
 
     @classmethod
     def validate_summary(cls, parsed, /):
@@ -129,7 +166,7 @@ class Violations:
 
             if br_tail_count == 0 and (parsed.params + parsed.returns + parsed.raises):
                 # Only applies if there are sections after the summary
-                yield Violations.DOC004, ()  # Missing blank line between summary and sections
+                yield cls.DOC004, ()  # Missing blank line between summary and sections
 
     @classmethod
     def validate_params(cls, parsed, parameters, /):
@@ -139,24 +176,24 @@ class Violations:
             type_hint = parameters.get(name)
             # Malformed param: missing ':' or missing name/type when required
             if not (sep and name) or (section_key == ptype_key and not kind):
-                yield Violations.DOC002, (section_key,)
+                yield cls.DOC002, (section_key,)
             if name and name not in parameters:  # Documented but not in signature
-                yield Violations.DOC101, (name,)
-            if kind and not Violations.is_valid_type_hint(kind):  # Invalid type syntax
-                yield Violations.DOC102, (kind,)
+                yield cls.DOC101, (name,)
+            if kind and not cls.is_valid_type_hint(kind):  # Invalid type syntax
+                yield cls.DOC102, (kind,)
             if kind and type_hint and kind == type_hint:  # Redundant type
-                yield Violations.DOC103, (kind,)
+                yield cls.DOC103, (kind,)
             if kind and type_hint and kind != type_hint:  # Mismatched type
-                yield Violations.DOC104, (kind, type_hint)
+                yield cls.DOC104, (kind, type_hint)
             if name and name in bag:  # Duplicated parameter
-                yield Violations.DOC105, (name,)
+                yield cls.DOC105, (name,)
             if name:
                 bag.add(name)
 
     @classmethod
     def validate_return(cls, parsed, type_hint, has_returns, is_implemented, /):
         if parsed.returns and (not has_returns and is_implemented):
-            yield Violations.DOC201, ()  # Return documented but implementation has no return
+            yield cls.DOC201, ()  # Return documented but implementation has no return
 
         bag = set()
         for doc_return in parsed.returns:
@@ -164,22 +201,22 @@ class Violations:
             # Malformed return: missing ':' or missing type/description when required
             if not sep:
                 # Missing ':' separator
-                yield Violations.DOC002, (section_key,)
+                yield cls.DOC002, (section_key,)
             elif section_key in return_set and not description:
                 # :return:´ without description
-                yield Violations.DOC002, (section_key,)
+                yield cls.DOC002, (section_key,)
             elif section_key == rtype_key and not return_type:  # ´:rtype:´ without type
-                yield Violations.DOC002, (section_key,)
+                yield cls.DOC002, (section_key,)
             # Invalid or redundant return type checks
-            if return_type and not Violations.is_valid_type_hint(return_type):  # Invalid return type
-                yield Violations.DOC202, (return_type,)
+            if return_type and not cls.is_valid_type_hint(return_type):  # Invalid return type
+                yield cls.DOC202, (return_type,)
             if return_type and type_hint and return_type == type_hint:  # Redundant return type
-                yield Violations.DOC203, (return_type,)
+                yield cls.DOC203, (return_type,)
             if return_type and type_hint and return_type != type_hint:  # Mismatched return type
-                yield Violations.DOC204, (return_type, type_hint)
+                yield cls.DOC204, (return_type, type_hint)
             # Duplicate return section
             if section_key in bag:
-                yield Violations.DOC205, (section_key,)  # Duplicate return section
+                yield cls.DOC205, (section_key,)  # Duplicate return section
             bag.add(section_key)
 
     @classmethod
@@ -187,28 +224,33 @@ class Violations:
         bag = set()
         for section_key, sep, error_types in parsed.raises:
             if not (sep and error_types):  # Missing ':' or missing error types
-                yield Violations.DOC002, (section_key,)
+                yield cls.DOC002, (section_key,)
 
-            is_invalid = any(not Violations.is_valid_syntax(e) for e in error_types)
+            is_invalid = any(not cls.is_valid_syntax(e) for e in error_types)
             if is_invalid:  # Invalid exception type syntax
-                yield Violations.DOC302, (is_invalid,)
+                yield cls.DOC302, (is_invalid,)
 
             for error_type in error_types:
                 if error_type in bag:  # Duplicate exception type
-                    yield Violations.DOC305, (error_type,)
+                    yield cls.DOC305, (error_type,)
                 bag.add(error_type)
 
     @classmethod
-    def discover(cls, parsed, parameters, has_returns, is_implemented, /):
+    def discover_all(cls, parsed, parameters, has_returns, is_implemented, /):
         if parsed.code_ini_lineno and parsed.docs_end_lineno and parsed.code_ini_lineno - parsed.docs_end_lineno == 1:
-            yield Violations.DOC003, ()
-        yield from ((Violations.DOC001, (section_key,)) for section_key in parsed.invalid)
+            yield cls.DOC003, ()
+        yield from ((cls.DOC001, (section_key,)) for section_key in parsed.invalid)
 
         yield from cls.validate_empty_lines(parsed)
         yield from cls.validate_summary(parsed)
         yield from cls.validate_params(parsed, parameters)
         yield from cls.validate_return(parsed, parameters.get("return"), has_returns, is_implemented)
         yield from cls.validate_raises(parsed)
+
+    def discover(self, parsed, parameters, has_returns, is_implemented, /):
+        for code, ctx in self.discover_all(parsed, parameters, has_returns, is_implemented):
+            if self.select.get(code[0], False):
+                yield code, ctx
 
 
 def parse_section_param(section_key, sep, parts_a, /):
@@ -409,13 +451,15 @@ def is_not_implemented(node, /, rawdocs=None):
             return False
 
 
-def checker(node, /):
+def checker(node, violations, /):
     """
     Returns True if the given AST node (ast.FunctionDef or ast.AsyncFunctionDef)
     contains a 'return', 'yield', or 'yield from' statement in its main body
     (excluding nested functions).
 
     :param ast.FunctionDef | ast.AsyncFunctionDef node: Root node to explore.
+    :param Violations violations: Violations instance with enabled/disabled rules.
+
     :return: Generator with data of each violation.
     :rtype: typing.Iterator[tuple[int, str, dict]]
     """
@@ -426,7 +470,7 @@ def checker(node, /):
     has_returns = has_return_or_yield(node)
     is_implemented = not is_not_implemented(node, rawdocs=parsed.rawdocs)
 
-    for (code, msg), ctx in Violations.discover(parsed, params, has_returns, is_implemented):
+    for (code, msg), ctx in violations.discover(parsed, params, has_returns, is_implemented):
         yield (lineno, code, msg, ctx)
 
 
@@ -444,10 +488,10 @@ def get_params(node, /):
         yield ("return", ast.unparse(node.returns))
 
 
-def check_node(filename, node, /):
+def check_node(filename, node, violations, /):
     fmt = "{}:{}: [{}] {}".format
     result = True
-    for lineno, code, msg, ctx in checker(node):
+    for lineno, code, msg, ctx in checker(node, violations):
         print(fmt(filename, lineno, code, msg.format(*ctx)))
         result = False
 
@@ -491,12 +535,29 @@ def main():
     parser = argparse.ArgumentParser(description="Sphinx docstring checker")
     parser.add_argument("files", nargs="*", help="files or dirs to check", default=[os.getcwd()])
     parser.add_argument("--ignore", nargs="*", help="directories to ignore", default=ignore)
-    args = parser.parse_args()
+
+    parser.add_argument(
+        "--enable",
+        nargs="*",
+        type=str.upper,
+        help="Violation codes to enable (or ALL, to enable all)",
+        default=[],
+    )
+    parser.add_argument(
+        "--disable",
+        nargs="*",
+        type=str.upper,
+        help="Violation codes to disable",
+        default=[],
+    )
     result = False
+
+    args = parser.parse_args()
+    violations = Violations(enable=args.enable, disable=args.disable)
     for path in walk(args.files, args.ignore):
         filename = str(path)
         for node in walk_module(path.read_bytes(), filename):
-            if not check_node(filename, node):
+            if not check_node(filename, node, violations):
                 result = True
 
     return 1 if result else 0

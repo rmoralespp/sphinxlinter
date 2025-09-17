@@ -141,16 +141,18 @@ def dummy():
     def test_check_node_no_warnings(self):
         filename = object()
         node = object()
+        violations = object()
         lines = tuple()
         with unittest.mock.patch("sphinxlinter.checker", return_value=lines) as checker:
-            result = sphinxlinter.check_node(filename, node)
+            result = sphinxlinter.check_node(filename, node, violations)
 
-        checker.assert_called_once_with(node)
+        checker.assert_called_once_with(node, violations)
         assert result
 
     def test_check_node_warnings(self):
         filename = "foo"
         node = object()
+        violations = object()
         lines = (
             (1, "CODE001", "message", tuple()),
             (3, "CODE00X", "bar {}-{}", (True, 5)),
@@ -163,8 +165,8 @@ def dummy():
             unittest.mock.patch("sphinxlinter.checker", return_value=lines) as checker,
             unittest.mock.patch("sphinxlinter.print") as printer,
         ):
-            result = sphinxlinter.check_node(filename, node)
+            result = sphinxlinter.check_node(filename, node, violations)
 
         printer.assert_has_calls(tuple(map(unittest.mock.call, expected)))
-        checker.assert_called_once_with(node)
+        checker.assert_called_once_with(node, violations)
         assert not result
