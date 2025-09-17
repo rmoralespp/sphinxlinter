@@ -2,6 +2,7 @@
 
 import argparse
 import ast
+import inspect
 import itertools
 import operator
 import os
@@ -22,6 +23,10 @@ ignore_set = {"var", "ivar", "cvar", "vartype", "meta"}  # At this moment, it's 
 summary_regex = re.compile(r'^(.*?)(?=^:|\Z)', flags=re.DOTALL | re.MULTILINE)
 # Section (start with ':' and end before next ':' at start of line or end of string)
 section_regex = re.compile(r'(^:.*?)(?=^:|\Z)', flags=re.DOTALL | re.MULTILINE)
+# Trailing empty lines
+trailing_regex = re.compile("(?:^\\s*$){2,}\\Z", flags=re.MULTILINE)
+# Consecutive empty lines (not at end)
+empty_lines_regex = re.compile("(?:^[ \t]*\r?\n){2,}(?=[^\r\n])", re.MULTILINE)
 
 
 class ParsedDocsParam(typing.NamedTuple):
@@ -51,6 +56,7 @@ class ParsedDocs(typing.NamedTuple):
     raises: list[ParsedDocsRaise]
     invalid: list[str]  # invalid sections
 
+    rawdocs: str | None  # Raw docstring
     docs: str | None  # The full docstring
     docs_ini_lineno: int | None  # First line number of the docstring, None if no docstring
     docs_end_lineno: int | None  # End line number of the docstring, None if no docstring
@@ -63,7 +69,8 @@ class Violations:
     DOC002 = ("DOC002", "Malformed section ({!r})")
     DOC003 = ("DOC003", "Missing blank line after docstring")
     DOC004 = ("DOC004", "Missing blank line between summary and sections")
-    DOC005 = ("DOC005", "More than 1 blank line after summary")
+    DOC007 = ("DOC005", "Too many consecutive empty lines")
+    DOC006 = ("DOC006", "Trailing empty lines")
     # DOC1xx: Argument issues
     DOC101 = ("DOC101", "Parameter documented but not in signature ({!r})")
     DOC102 = ("DOC102", "Invalid parameter type syntax ({!r})")
@@ -81,10 +88,18 @@ class Violations:
     DOC305 = ("DOC305", "Duplicated exception type ({!r})")
 
     @staticmethod
-    def is_valid_syntax(v, /):
-        if v:
+    def is_valid_syntax(value, /):
+        try:
+            ast.parse(value, mode="eval")
+            return True
+        except SyntaxError:
+            return False
+
+    @classmethod
+    def is_valid_type_hint(cls, hint, /):
+        if hint:
             try:
-                ast.parse(v)
+                ast.parse(f"x: {hint}")
                 return True
             except SyntaxError:
                 return False
@@ -92,8 +107,16 @@ class Violations:
             return False
 
     @classmethod
-    def is_valid_type_hint(cls, hint, /):
-        return cls.is_valid_syntax(f"x: {hint}")
+    def validate_empty_lines(cls, parsed, /):
+        if parsed.rawdocs:
+            hits = trailing_regex.finditer(parsed.rawdocs)
+            present = next(filter(None, hits), None)
+            if present:
+                yield Violations.DOC006, ()
+            hits = empty_lines_regex.finditer(parsed.rawdocs)
+            present = next(filter(None, hits), None)
+            if present:
+                yield Violations.DOC007, ()
 
     @classmethod
     def validate_summary(cls, parsed, /):
@@ -104,9 +127,6 @@ class Violations:
             if br_tail_count == 0 and (parsed.params + parsed.returns + parsed.raises):
                 # Only applies if there are sections after the summary
                 yield Violations.DOC004, ()  # Missing blank line between summary and sections
-
-            if br_tail_count > 1:  # More than 1 blank line after summary
-                yield Violations.DOC005, ()
 
     @classmethod
     def validate_params(cls, parsed, parameters, /):
@@ -177,8 +197,9 @@ class Violations:
     def discover(cls, parsed, parameters, has_returns, is_implemented, /):
         if parsed.code_ini_lineno and parsed.docs_end_lineno and parsed.code_ini_lineno - parsed.docs_end_lineno == 1:
             yield Violations.DOC003, ()
-
         yield from ((Violations.DOC001, (section_key,)) for section_key in parsed.invalid)
+
+        yield from cls.validate_empty_lines(parsed)
         yield from cls.validate_summary(parsed)
         yield from cls.validate_params(parsed, parameters)
         yield from cls.validate_return(parsed, parameters.get("return"), has_returns, is_implemented)
@@ -241,7 +262,7 @@ def itersections(docstring, /):
 
 
 def get_summary(docstring, /):
-    if docstring and (match := summary_regex.search(docstring)):
+    if docstring and (match := summary_regex.match(docstring)):
         return match.group(0)
     else:
         return None
@@ -252,7 +273,8 @@ def parse_docs(node, /):
     raises = list()
     returns = list()
     invalid = list()
-    docstring = ast.get_docstring(node)
+    rawdocs = ast.get_docstring(node, clean=False)
+    docstring = rawdocs if rawdocs is None else inspect.cleandoc(rawdocs)
 
     for section in itersections(docstring):
         a, sep, b = section.lstrip(":").partition(":")
@@ -286,6 +308,7 @@ def parse_docs(node, /):
 
     return ParsedDocs(
         summary=summary,
+        rawdocs=rawdocs,
         docs=docstring,
         docs_ini_lineno=docs_ini_lineno,
         docs_end_lineno=docs_end_lineno,
@@ -303,7 +326,7 @@ def has_return_or_yield(node, /):
     contains a 'return', 'yield', or 'yield from' statement in its main body
     (excluding nested functions).
 
-    :param ast.AST node: Root node to explore.
+    :param ast.FunctionDef | ast.AsyncFunctionDef node: Root node to explore.
     :return: Whether the function has either "return" or "yield".
     :rtype: bool
     """
@@ -339,7 +362,7 @@ def has_return_or_yield(node, /):
     return visitor.found
 
 
-def is_not_implemented(node, /, docstring=None):
+def is_not_implemented(node, /, rawdocs=None):
     """
     Returns True if the given AST node's body contains exactly one statement
     and that statement is one of the following:
@@ -347,13 +370,16 @@ def is_not_implemented(node, /, docstring=None):
       - `raise NotImplementedError` or `raise NotImplementedError()`
       - `...` (Ellipsis literal)
     Otherwise, returns False.
+
+    :param ast.FunctionDef | ast.AsyncFunctionDef node: Root node to explore.
+    :param str | None rawdocs: Raw docstring.
     """
 
-    if docstring and len(node.body) > 2 or (not docstring and len(node.body) > 1):
-        return False
-    elif docstring and len(node.body) == 1:
+    if rawdocs and len(node.body) > 2 or (not rawdocs and len(node.body) > 1):
+        return False  # More than one statement
+    elif rawdocs and len(node.body) == 1:
         return True  # Only docstring, no code
-    else:
+    else:  # One statement (without docstring or after docstring)
         stmt = node.body[-1]
 
         if isinstance(stmt, ast.Pass):  # Case: "pass"
@@ -398,7 +424,7 @@ def checker(node, /):
     parsed = parse_docs(node)
     lineno = parsed.docs_ini_lineno
     has_returns = has_return_or_yield(node)
-    is_implemented = not is_not_implemented(node, docstring=parsed.docs)
+    is_implemented = not is_not_implemented(node, rawdocs=parsed.rawdocs)
 
     for (code, msg), ctx in Violations.discover(parsed, params, has_returns, is_implemented):
         yield (lineno, code, msg, ctx)

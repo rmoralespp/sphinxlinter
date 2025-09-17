@@ -117,6 +117,6 @@ def function_NotImplementedError_cond(x):
 )
 def test_checker_none(function, expected):
     root = parse_function(function)
-    docs = ast.get_docstring(root)
-    result = sphinxlinter.is_not_implemented(root, docstring=docs)
+    rawdocs = ast.get_docstring(root, clean=False)
+    result = sphinxlinter.is_not_implemented(root, rawdocs=rawdocs)
     assert result == expected

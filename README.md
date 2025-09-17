@@ -66,7 +66,8 @@ Notes
 | DOC002 | Malformed section                               |
 | DOC003 | Missing blank line after docstring              |
 | DOC004 | Missing blank line between summary and sections |
-| DOC005 | More than 1 blank line after summary            |
+| DOC005 | Too many consecutive empty lines                |
+| DOC006 | Trailing empty lines                            |
 
 **DOC1xx: Parameter issues**
 
