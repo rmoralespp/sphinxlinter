@@ -81,23 +81,19 @@ class Violations:
     DOC305 = ("DOC305", "Duplicated exception type ({!r})")
 
     @staticmethod
-    def is_valid_syntax(value, /):
-        try:
-            ast.parse(value, mode="eval")
-            return True
-        except SyntaxError:
-            return False
-
-    @classmethod
-    def is_valid_type_hint(cls, hint, /):
-        if hint:
+    def is_valid_syntax(v, /):
+        if v:
             try:
-                ast.parse(f"x: {hint}")
+                ast.parse(v)
                 return True
             except SyntaxError:
                 return False
         else:
             return False
+
+    @classmethod
+    def is_valid_type_hint(cls, hint, /):
+        return cls.is_valid_syntax(f"x: {hint}")
 
     @classmethod
     def validate_summary(cls, parsed, /):
@@ -135,9 +131,9 @@ class Violations:
                 bag.add(name)
 
     @classmethod
-    def validate_return(cls, parsed, type_hint, has_returns, /):
-        if parsed.returns and not has_returns:
-            yield Violations.DOC201, ()  # Return documented but function has no return
+    def validate_return(cls, parsed, type_hint, has_returns, is_implemented, /):
+        if parsed.returns and (not has_returns and is_implemented):
+            yield Violations.DOC201, ()  # Return documented but implementation has no return
 
         bag = set()
         for doc_return in parsed.returns:
@@ -178,14 +174,14 @@ class Violations:
                 bag.add(error_type)
 
     @classmethod
-    def discover(cls, parsed, parameters, has_returns, /):
+    def discover(cls, parsed, parameters, has_returns, is_implemented, /):
         if parsed.code_ini_lineno and parsed.docs_end_lineno and parsed.code_ini_lineno - parsed.docs_end_lineno == 1:
             yield Violations.DOC003, ()
 
-        yield from cls.validate_summary(parsed)
         yield from ((Violations.DOC001, (section_key,)) for section_key in parsed.invalid)
+        yield from cls.validate_summary(parsed)
         yield from cls.validate_params(parsed, parameters)
-        yield from cls.validate_return(parsed, parameters.get("return"), has_returns)
+        yield from cls.validate_return(parsed, parameters.get("return"), has_returns, is_implemented)
         yield from cls.validate_raises(parsed)
 
 
@@ -343,23 +339,68 @@ def has_return_or_yield(node, /):
     return visitor.found
 
 
+def is_not_implemented(node, /, docstring=None):
+    """
+    Returns True if the given AST node's body contains exactly one statement
+    and that statement is one of the following:
+      - `pass`
+      - `raise NotImplementedError` or `raise NotImplementedError()`
+      - `...` (Ellipsis literal)
+    Otherwise, returns False.
+    """
+
+    if docstring and len(node.body) > 2 or (not docstring and len(node.body) > 1):
+        return False
+    elif docstring and len(node.body) == 1:
+        return True  # Only docstring, no code
+    else:
+        stmt = node.body[-1]
+
+        if isinstance(stmt, ast.Pass):  # Case: "pass"
+            return True
+
+        elif isinstance(stmt, ast.Raise):  # Case: "raise NotImplementedError()"
+            exc = stmt.exc
+            error_name = NotImplementedError.__name__
+            if (
+                    isinstance(exc, ast.Call)
+                    and isinstance(exc.func, ast.Name)
+                    and exc.func.id == error_name
+            ):
+                return True
+            elif isinstance(exc, ast.Name) and exc.id == error_name:  # Case: "raise NotImplementedError"
+                return True
+            else:
+                return False
+
+        elif isinstance(stmt, ast.Expr):  # Case: "..."
+            if isinstance(stmt.value, ast.Constant) and (stmt.value.value is Ellipsis):
+                return True
+            else:
+                return False
+        else:
+
+            return False
+
+
 def checker(node, /):
     """
     Returns True if the given AST node (ast.FunctionDef or ast.AsyncFunctionDef)
     contains a 'return', 'yield', or 'yield from' statement in its main body
     (excluding nested functions).
 
-    :param ast.AST node: Root node to explore.
+    :param ast.FunctionDef | ast.AsyncFunctionDef node: Root node to explore.
     :return: Generator with data of each violation.
     :rtype: typing.Iterator[tuple[int, str, dict]]
     """
 
-    has_returns = has_return_or_yield(node)
     params = dict(get_params(node))
     parsed = parse_docs(node)
     lineno = parsed.docs_ini_lineno
+    has_returns = has_return_or_yield(node)
+    is_implemented = not is_not_implemented(node, docstring=parsed.docs)
 
-    for (code, msg), ctx in Violations.discover(parsed, params, has_returns):
+    for (code, msg), ctx in Violations.discover(parsed, params, has_returns, is_implemented):
         yield (lineno, code, msg, ctx)
 
 
