@@ -69,8 +69,9 @@ class Violations:
     DOC002 = ("DOC002", "Malformed section ({!r})")
     DOC003 = ("DOC003", "Missing blank line after docstring")
     DOC004 = ("DOC004", "Missing blank line between summary and sections")
-    DOC007 = ("DOC005", "Too many consecutive empty lines")
+    DOC005 = ("DOC005", "Too many consecutive empty lines")
     DOC006 = ("DOC006", "Trailing empty lines")
+
     # DOC1xx: Argument issues
     DOC101 = ("DOC101", "Parameter documented but not in signature ({!r})")
     DOC102 = ("DOC102", "Invalid parameter type syntax ({!r})")
@@ -108,15 +109,17 @@ class Violations:
 
     @classmethod
     def validate_empty_lines(cls, parsed, /):
-        if parsed.rawdocs:
-            hits = trailing_regex.finditer(parsed.rawdocs)
+        text = parsed.rawdocs
+        if text:
+            hits = empty_lines_regex.finditer(text)
+            present = next(filter(None, hits), None)
+            if present:
+                yield Violations.DOC005, ()
+
+            hits = trailing_regex.finditer(text)
             present = next(filter(None, hits), None)
             if present:
                 yield Violations.DOC006, ()
-            hits = empty_lines_regex.finditer(parsed.rawdocs)
-            present = next(filter(None, hits), None)
-            if present:
-                yield Violations.DOC007, ()
 
     @classmethod
     def validate_summary(cls, parsed, /):
@@ -159,9 +162,11 @@ class Violations:
         for doc_return in parsed.returns:
             section_key, sep, return_type, description = doc_return
             # Malformed return: missing ':' or missing type/description when required
-            if not sep:  # Missing ':' separator
+            if not sep:
+                # Missing ':' separator
                 yield Violations.DOC002, (section_key,)
-            elif section_key in return_set and not description:  # ´:return:´ without description
+            elif section_key in return_set and not description:
+                # :return:´ without description
                 yield Violations.DOC002, (section_key,)
             elif section_key == rtype_key and not return_type:  # ´:rtype:´ without type
                 yield Violations.DOC002, (section_key,)
@@ -394,18 +399,13 @@ def is_not_implemented(node, /, rawdocs=None):
                     and exc.func.id == error_name
             ):
                 return True
-            elif isinstance(exc, ast.Name) and exc.id == error_name:  # Case: "raise NotImplementedError"
-                return True
-            else:
-                return False
+
+            else:  # Case: "raise NotImplementedError"
+                return isinstance(exc, ast.Name) and exc.id == error_name
 
         elif isinstance(stmt, ast.Expr):  # Case: "..."
-            if isinstance(stmt.value, ast.Constant) and (stmt.value.value is Ellipsis):
-                return True
-            else:
-                return False
+            return isinstance(stmt.value, ast.Constant) and (stmt.value.value is Ellipsis)
         else:
-
             return False
 
 

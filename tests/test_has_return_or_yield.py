@@ -13,7 +13,7 @@ def parse_function(function):
     return root.body[0]
 
 
-def function_no_return_no_yield():
+def function_no_return_no_yield():  # pragma: no cover
 
     def foo():
         return None
@@ -27,7 +27,7 @@ def function_no_return_no_yield():
     pass
 
 
-def function_return():
+def function_return():  # pragma: no cover
 
     def foo():
         pass
@@ -48,7 +48,7 @@ def function_return():
         return None
 
 
-def function_yield_from():
+def function_yield_from():  # pragma: no cover
     a = dict()
     try:
         a["foo"]
@@ -56,7 +56,7 @@ def function_yield_from():
         yield from ""
 
 
-def function_yield():
+def function_yield():  # pragma: no cover
     a = dict()
     try:
         a["foo"]
@@ -64,7 +64,7 @@ def function_yield():
         yield None
 
 
-async def async_none():
+async def async_none():  # pragma: no cover
     def foo():
         yield from ""
 
@@ -80,7 +80,7 @@ async def async_none():
     pass
 
 
-async def async_yield():
+async def async_yield():  # pragma: no cover
     def foo():
         pass
 

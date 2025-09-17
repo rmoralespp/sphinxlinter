@@ -31,6 +31,22 @@ def foo():
     assert result == expected
 
 
+@pytest.mark.parametrize("section", tuple(sphinxlinter.ignore_set))
+def test_DOC001_ignored(section):
+    content = f'''
+def foo():
+    """
+    Title.
+
+    :{section}:
+    """
+
+    pass
+'''
+    result = tuple(sphinxlinter.checker(parse_content(content)))
+    assert not result
+
+
 @pytest.mark.parametrize("section, value", [
     # param
     ("param", ":param a",),  # missing separator ":" at the end
@@ -178,7 +194,7 @@ def foo(a):
     pass
 '''
     expected = (
-        ((3, 'DOC102', 'Invalid parameter type syntax ({!r})', ('list[str,',)),)
+        ((3, "DOC102", "Invalid parameter type syntax ({!r})", ("list[str,",)),)
     )
     result = tuple(sphinxlinter.checker(parse_content(content)))
     assert result == expected
@@ -196,7 +212,7 @@ def foo(a:int):
     pass
 '''
     expected = (
-        ((3, 'DOC103', 'Parameter type already in signature ({!r})', ('int',)),)
+        ((3, "DOC103", "Parameter type already in signature ({!r})", ("int",)),)
     )
     result = tuple(sphinxlinter.checker(parse_content(content)))
     assert result == expected
@@ -209,16 +225,16 @@ def foo(a:int):
     Title.
 
     :param str a: description
-    """ 
+    """
 
     pass
 '''
     expected = (
         (
             3,
-            'DOC104',
-            'Parameter type mismatch with hint ({!r} != {!r})',
-            ('str', 'int'),
+            "DOC104",
+            "Parameter type mismatch with hint ({!r} != {!r})",
+            ("str", "int"),
         ),
     )
     result = tuple(sphinxlinter.checker(parse_content(content)))
@@ -239,7 +255,7 @@ def foo(a):
     pass
 '''
     expected = (
-        (3, 'DOC105', 'Duplicated parameter ({!r})', ('a',)),
+        (3, "DOC105", "Duplicated parameter ({!r})", ("a",)),
     )
     result = tuple(sphinxlinter.checker(parse_content(content)))
     assert result == expected
@@ -259,7 +275,7 @@ def foo():
 '''
 
     expected = (
-        (3, 'DOC201', 'Return documented but function has no return', ()),
+        (3, "DOC201", "Return documented but function has no return", ()),
     )
     result = tuple(sphinxlinter.checker(parse_content(content)))
     assert result == expected
@@ -278,7 +294,7 @@ def foo():
 '''
 
     expected = (
-        (3, 'DOC202', 'Invalid return type syntax ({!r})', ('list[int,',)),
+        (3, "DOC202", "Invalid return type syntax ({!r})", ("list[int,",)),
     )
     result = tuple(sphinxlinter.checker(parse_content(content)))
     assert result == expected
@@ -297,7 +313,7 @@ def foo() -> int:
 '''
 
     expected = (
-        ((3, 'DOC203', 'Return type already in signature ({!r})', ('int',)),)
+        ((3, "DOC203", "Return type already in signature ({!r})", ("int",)),)
     )
     result = tuple(sphinxlinter.checker(parse_content(content)))
     assert result == expected
@@ -316,7 +332,7 @@ def foo() -> int:
 '''
 
     expected = (
-        (3, 'DOC204', 'Return type mismatch with annotation ({!r} != {!r})',  ('str', 'int')),
+        (3, "DOC204", "Return type mismatch with annotation ({!r} != {!r})", ("str", "int")),
     )
     result = tuple(sphinxlinter.checker(parse_content(content)))
     assert result == expected
@@ -332,12 +348,12 @@ def foo():
     :rtype: int
     :return: description
     {repeated}
-    """ 
+    """
 
     return 1
 '''
     expected = (
-        ((3, 'DOC205', 'Duplicated return section ({!r})', (key,)),)
+        ((3, "DOC205", "Duplicated return section ({!r})", (key,)),)
     )
     result = tuple(sphinxlinter.checker(parse_content(content)))
     assert result == expected
@@ -356,7 +372,7 @@ def foo():
 '''
 
     expected = (
-        ((3, 'DOC302', 'Invalid exception type syntax ({!r})', (True,)),)
+        ((3, "DOC302", "Invalid exception type syntax ({!r})", (True,)),)
     )
     result = tuple(sphinxlinter.checker(parse_content(content)))
     assert result == expected
@@ -376,7 +392,7 @@ def foo():
 '''
 
     expected = (
-        ((3, 'DOC305', 'Duplicated exception type ({!r})', ('ValueError',)),)
+        ((3, "DOC305", "Duplicated exception type ({!r})", ("ValueError",)),)
     )
     result = tuple(sphinxlinter.checker(parse_content(content)))
     assert result == expected

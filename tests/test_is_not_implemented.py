@@ -12,82 +12,81 @@ def parse_function(function):
     return ast.parse(inspect.getsource(function)).body[0]
 
 
-def function_only_docstring_single_line():
+def function_only_docstring_single_line():  # pragma: no cover
     """This is a docstring."""
 
 
-def function_only_docstring_empty():
-    """ """
+def function_only_docstring_empty():  # pragma: no cover
+    """ """  # noqa: D419
 
 
-def function_only_docstring_multiline():
+def function_only_docstring_multiline():  # pragma: no cover
     """
     This is a docstring.
     It has multiple lines.
     """
 
 
-def function_ellipsis():
+def function_ellipsis():  # pragma: no cover
     ...
 
 
-def function_ellipsis_with_docstring():
+def function_ellipsis_with_docstring():  # pragma: no cover
     """This is a docstring."""
 
     ...
 
 
-def function_ellipsis_not_single():
-    a = 1  # noqa
+def function_ellipsis_not_single():  # pragma: no cover
+    tuple()  # noqa: B018
     ...
 
 
-def function_pass():
+def function_pass():  # pragma: no cover
     pass
 
 
-def function_pass_with_docstring():
-    """
-    This is a docstring."""
+def function_pass_with_docstring():  # pragma: no cover
+    """This is a docstring."""
 
     pass
 
 
-def function_pass_not_single():
-    a = 1  # noqa
+def function_pass_not_single():  # pragma: no cover
+    tuple()  # noqa: B018
     pass
 
 
-def function_NotImplementedError():
+def function_NotImplementedError():  # pragma: no cover
     raise NotImplementedError
 
 
-def function_NotImplementedError_with_docstring():
+def function_NotImplementedError_with_docstring():  # pragma: no cover
     """This is a docstring."""
 
     raise NotImplementedError
 
 
-def function_NotImplementedError_call():
+def function_NotImplementedError_call():  # pragma: no cover
     raise NotImplementedError("message")
 
 
-def function_NotImplementedError_call_with_docstring():
+def function_NotImplementedError_call_with_docstring():  # pragma: no cover
     """This is a docstring."""
 
     raise NotImplementedError("message")
 
 
-def function_NotImplementedError_call_not_single():
-    a = 1  # noqa
+def function_NotImplementedError_call_not_single():  # pragma: no cover
+    tuple()  # noqa: B018
     raise NotImplementedError("message")
 
 
-def function_ValueError():
+def function_ValueError():  # pragma: no cover
     raise ValueError
 
 
-def function_NotImplementedError_cond(x):
+def function_NotImplementedError_cond(x):  # pragma: no cover
     if x:
         raise ValueError
     else:
