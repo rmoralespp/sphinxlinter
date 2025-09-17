@@ -67,12 +67,18 @@ Run on specific files or directories
 sphinxlinter path/to/file_or_dir ...
 ```
 
-## Optional arguments
+## Arguments and Options
 
-* **--help:** Show help message and exit
-* **--enable:** Whitespace-separated list of violation codes to enable (or ALL, to enable all), by default all are enabled.
-* **--disable:** Whitespace-separated list of violation codes to disable, by default none are disabled. **Takes precedence over --enable**
-* **--ignore:** Directories to ignore from analysis
+**Arguments**
+
+* `[FILES]`: List of files or directories to check.
+
+**Options**
+
+* `--help`: Displays the help message and exits.
+* `--enable`:  Violation codes to enable (or ALL, to enable all rules), by default all are enabled.
+* `--disable`: Violation codes to disable, by default none are disabled. **Takes precedence over `--enable`**.
+* `--ignore`: Directories to exclude from analysis (for example `venv`, `.cache`).
 
 ## Violation reporting
 
