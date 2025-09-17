@@ -114,12 +114,12 @@ class Violations:
     }
 
     def __init__(self, /, *, enable=None, disable=None):
-        if enable is None:
+        if not enable:
             self.select = self.SELECT
         elif "ALL" in enable:
             self.select = dict.fromkeys(self.SELECT, True)
         else:
-            self.select = dict.fromkeys(enable, True) if enable else self.SELECT
+            self.select = dict.fromkeys(enable, True)
 
         # Apply disable after enable, so disable has precedence
         if disable is not None:
