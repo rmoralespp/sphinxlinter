@@ -34,3 +34,6 @@ test = [
 lint = [
     "ruff",
 ]
+
+[project.scripts]
+sphinxlinter = "sphinxlinter:main"

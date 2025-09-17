@@ -1,0 +1,37 @@
+name: CI
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types:
+      - closed
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.13'
+      - name: Install tests/lint dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install --group=test --group=lint
+      - name: Run Ruff linter
+        run: ruff check --quiet --output-format=concise
+      - name: Run tests and collect coverage
+        run: pytest --cov sphinxlinter
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v4.0.1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: rmoralespp/sphinxlinter
