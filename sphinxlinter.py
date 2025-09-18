@@ -4,6 +4,7 @@ import argparse
 import ast
 import inspect
 import itertools
+import logging
 import operator
 import os
 import pathlib
@@ -64,66 +65,50 @@ class ParsedDocs(typing.NamedTuple):
 
 
 class Violations:
+    # Rules definition:
+    #   Enabled, Code, Message
+
     # DOC0xx: Docstring section issues
-    DOC001 = ("DOC001", "Unknown docstring section ({!r})")
-    DOC002 = ("DOC002", "Malformed section ({!r})")
-    DOC003 = ("DOC003", "Missing blank line after docstring")
-    DOC004 = ("DOC004", "Missing blank line between summary and sections")
-    DOC005 = ("DOC005", "Too many consecutive empty lines")
-    DOC006 = ("DOC006", "Trailing empty lines")
+    DOC001 = (True, "DOC001", "Unknown docstring section ({!r})")
+    DOC002 = (True, "DOC002", "Malformed section ({!r})")
+    DOC003 = (True, "DOC003", "Missing blank line after docstring")
+    DOC004 = (True, "DOC004", "Missing blank line between summary and sections")
+    DOC005 = (True, "DOC005", "Too many consecutive empty lines")
+    DOC006 = (True, "DOC006", "Trailing empty lines")
 
     # DOC1xx: Argument issues
-    DOC101 = ("DOC101", "Parameter documented but not in signature ({!r})")
-    DOC102 = ("DOC102", "Invalid parameter type syntax ({!r})")
-    DOC103 = ("DOC103", "Parameter type already in signature ({!r})")
-    DOC104 = ("DOC104", "Parameter type mismatch with hint ({!r} != {!r})")
-    DOC105 = ("DOC105", "Duplicated parameter ({!r})")
+    DOC101 = (True, "DOC101", "Parameter documented but not in signature ({!r})")
+    DOC102 = (True, "DOC102", "Invalid parameter type syntax ({!r})")
+    DOC103 = (True, "DOC103", "Parameter type already in signature ({!r})")
+    DOC104 = (True, "DOC104", "Parameter type mismatch with hint ({!r} != {!r})")
+    DOC105 = (True, "DOC105", "Duplicated parameter ({!r})")
+
     # DOC2xx: Return issues
-    DOC201 = ("DOC201", "Return documented but function has no return")
-    DOC202 = ("DOC202", "Invalid return type syntax ({!r})")
-    DOC203 = ("DOC203", "Return type already in signature ({!r})")
-    DOC204 = ("DOC204", "Return type mismatch with annotation ({!r} != {!r})")
-    DOC205 = ("DOC205", "Duplicated return section ({!r})")
+    DOC201 = (True, "DOC201", "Return documented but function has no return")
+    DOC202 = (True, "DOC202", "Invalid return type syntax ({!r})")
+    DOC203 = (True, "DOC203", "Return type already in signature ({!r})")
+    DOC204 = (True, "DOC204", "Return type mismatch with annotation ({!r} != {!r})")
+    DOC205 = (True, "DOC205", "Duplicated return section ({!r})")
+
     # DOC3xx: Raise issues
-    DOC302 = ("DOC302", "Invalid exception type syntax ({!r})")
-    DOC305 = ("DOC305", "Duplicated exception type ({!r})")
-
-    # Default enabled/disabled rules
-    SELECT = {
-        DOC001[0]: True,
-        DOC002[0]: True,
-        DOC003[0]: True,
-        DOC004[0]: True,
-        DOC005[0]: True,
-        DOC006[0]: True,
-
-        DOC101[0]: True,
-        DOC102[0]: True,
-        DOC103[0]: True,
-        DOC104[0]: True,
-        DOC105[0]: True,
-
-        DOC201[0]: True,
-        DOC202[0]: True,
-        DOC203[0]: True,
-        DOC204[0]: True,
-        DOC205[0]: True,
-
-        DOC302[0]: True,
-        DOC305[0]: True,
-    }
+    DOC302 = (True, "DOC302", "Invalid exception type syntax ({!r})")
+    DOC305 = (True, "DOC305", "Duplicated exception type ({!r})")
 
     def __init__(self, /, *, enable=None, disable=None):
+        is_rule = re.compile("^DOC\\d+$").match
+        all_rules = filter(is_rule, dir(self))
         if not enable:
-            self.select = self.SELECT
+            selected = set(name for name in all_rules if getattr(self, name)[0])
         elif "ALL" in enable:
-            self.select = dict.fromkeys(self.SELECT, True)
+            selected = set(all_rules)
         else:
-            self.select = dict.fromkeys(enable, True)
+            selected = set(enable)
 
         # Apply disable after enable, so disable has precedence
         if disable is not None:
-            self.select |= dict.fromkeys(disable, False)
+            selected.difference_update(disable)
+
+        self.valid = frozenset(selected)
 
     @staticmethod
     def is_valid_syntax(value, /):
@@ -248,9 +233,9 @@ class Violations:
         yield from cls.validate_raises(parsed)
 
     def discover(self, parsed, parameters, has_returns, is_implemented, /):
-        for code, ctx in self.discover_all(parsed, parameters, has_returns, is_implemented):
-            if self.select.get(code[0], False):
-                yield code, ctx
+        for (_, code, msg), ctx in self.discover_all(parsed, parameters, has_returns, is_implemented):
+            if code in self.valid:
+                yield ((code, msg), ctx)
 
 
 def parse_section_param(section_key, sep, parts_a, /):
@@ -379,29 +364,29 @@ def has_return_or_yield(node, /):
     """
 
     class ReturnYieldVisitor(ast.NodeVisitor):
-        def __init__(self):
+        def __init__(self, /):
             self.found = False
             self.depth = 0
 
-        def visit_nested(self, node):
+        def visit_nested(self, node, /):
             if self.depth == 0:
                 self.depth += 1
                 self.generic_visit(node)
                 self.depth -= 1
 
-        def visit_FunctionDef(self, node):
+        def visit_FunctionDef(self, node, /):
             self.visit_nested(node)
 
-        def visit_AsyncFunctionDef(self, node):
+        def visit_AsyncFunctionDef(self, node, /):
             self.visit_nested(node)
 
-        def visit_Return(self, node):
+        def visit_Return(self, node, /):
             self.found = True
 
-        def visit_Yield(self, node):
+        def visit_Yield(self, node, /):
             self.found = True
 
-        def visit_YieldFrom(self, node):
+        def visit_YieldFrom(self, node, /):
             self.found = True
 
     visitor = ReturnYieldVisitor()
@@ -510,8 +495,8 @@ def walk_module(data, filename, /):
 
     try:
         tree = ast.parse(data, filename=filename)
-    except SyntaxError:
-        pass
+    except SyntaxError as e:
+        logging.warning("%s: %s", filename, e)
     else:
         klasses = (ast.FunctionDef, ast.AsyncFunctionDef)
         for node in ast.walk(tree):
@@ -531,6 +516,8 @@ def walk(paths, ignore_dirs, /):
 
 
 def main():
+    logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+
     ignore = [".venv", ".env", ".git", ".pytest_cache", ".ruff_cache", "__pycache__", "site-packages"]
     parser = argparse.ArgumentParser(description="Sphinx docstring checker")
     parser.add_argument("files", nargs="*", help="files or dirs to check", default=[os.getcwd()])

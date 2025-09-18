@@ -5,8 +5,16 @@
 [![codecov](https://codecov.io/gh/rmoralespp/sphinxlinter/branch/main/graph/badge.svg)](https://app.codecov.io/gh/rmoralespp/sphinxlinter)
 [![license](https://img.shields.io/github/license/rmoralespp/sphinxlinter.svg)](https://github.com/rmoralespp/sphinxlinter/blob/main/LICENSE)
 
-A lightweight Python linter for checking Sphinx docstrings and ensuring they follow the recommended field list style
-and are consistent with function signatures.
+A lightweight Python linter that ensures **Sphinx docstrings** follow the
+recommended [field list style](https://www.sphinx-doc.org/en/master/usage/domains/python.html#info-field-lists)
+and are consistent with function signatures and implementation.
+
+**Motivation**
+
+This linter enforces Sphinx docstring rules—like field list style and consistency with function signatures and
+implementation—not covered
+by [pydocstyle](https://www.pydocstyle.org/en/stable/error_codes.html), [pydoclint](https://jsh9.github.io/pydoclint/violation_codes.html),
+or [ruff](https://docs.astral.sh/ruff/rules/).
 
 In general, a typical Sphinx docstring has the following
 format ([ref](https://sphinx-rtd-tutorial.readthedocs.io/en/latest/docstrings.html)):
@@ -26,7 +34,7 @@ format ([ref](https://sphinx-rtd-tutorial.readthedocs.io/en/latest/docstrings.ht
 
 Requirements
 
-- Python 3.8+
+- Python 3.9+
 
 Quick usage, download the `sphinxlinter.py` script from
 following [link](https://github.com/rmoralespp/sphinxlinter/archive/refs/heads/main.zip)
@@ -112,43 +120,43 @@ Notes
 
 ### Violation Codes Table
 
-**DOC0xx: Docstring section issues**
+### DOC0xx: Docstring section issues
 
-| Code   | Description                                     |
-|--------|-------------------------------------------------|
-| DOC001 | Unknown docstring section                       |
-| DOC002 | Malformed section                               |
-| DOC003 | Missing blank line after docstring              |
-| DOC004 | Missing blank line between summary and sections |
-| DOC005 | Too many consecutive empty lines                |
-| DOC006 | Trailing empty lines                            |
+| Code   | Description                                     | Justification                                              |
+|--------|-------------------------------------------------|------------------------------------------------------------|
+| DOC001 | Unknown docstring section                       | Detects sections not recognized by Sphinx conventions.     |
+| DOC002 | Malformed section                               | Ensures sections follow correct Sphinx formatting.         |
+| DOC003 | Missing blank line after docstring              | Improves readability and separates docstrings from code.   |
+| DOC004 | Missing blank line between summary and sections | Maintains clarity and standard docstring structure.        |
+| DOC005 | Too many consecutive empty lines                | Avoids unnecessary whitespace, keeping docstrings clean.   |
+| DOC006 | Trailing empty lines                            | Ensures docstrings do not contain superfluous blank lines. |
 
-**DOC1xx: Parameter issues**
+### DOC1xx: Parameter issues
 
-| Code   | Description                               |
-|--------|-------------------------------------------|
-| DOC101 | Parameter documented but not in signature |
-| DOC102 | Invalid parameter type syntax             |
-| DOC103 | Parameter type already in signature       |
-| DOC104 | Parameter type mismatch with hint         |
-| DOC105 | Duplicated parameter                      |
+| Code   | Description                               | Justification                                                         |
+|--------|-------------------------------------------|-----------------------------------------------------------------------|
+| DOC101 | Parameter documented but not in signature | Detects inconsistencies between documentation and function signature. |
+| DOC102 | Invalid parameter type syntax             | Ensures parameter types conform to valid Python type hint syntax.     |
+| DOC103 | Parameter type already in signature       | Prevents redundant type declarations.                                 |
+| DOC104 | Parameter type mismatch with hint         | Ensures documented types match actual function hints.                 |
+| DOC105 | Duplicated parameter                      | Avoids repeating the same parameter in the docstring.                 |
 
-**DOC2xx: Return issues**
+### DOC2xx: Return issues
 
-| Code   | Description                                  |
-|--------|----------------------------------------------|
-| DOC201 | Return documented but function has no return |
-| DOC202 | Invalid return type syntax                   |
-| DOC203 | Return type already in signature             |
-| DOC204 | Return type mismatch with annotation         |
-| DOC205 | Duplicated return section                    |
+| Code   | Description                                  | Justification                                                             |
+|--------|----------------------------------------------|---------------------------------------------------------------------------|
+| DOC201 | Return documented but function has no return | Indicates that it is documented for returns, but has no return statement. |
+| DOC202 | Invalid return type syntax                   | Ensures return type conform to valid Python type hint syntax.             |
+| DOC203 | Return type already in signature             | Prevents redundant return type hints.                                     |
+| DOC204 | Return type mismatch with annotation         | Validates consistency with function return type hints.                    |
+| DOC205 | Duplicated return section                    | Avoids repeated return sections in then docstring.                        |
 
-**DOC3xx: Raises issues**
+### DOC3xx: Raises issues
 
-| Code   | Description                   |
-|--------|-------------------------------|
-| DOC302 | Invalid exception type syntax |
-| DOC305 | Duplicated exception type     |
+| Code   | Description                   | Justification                                       |
+|--------|-------------------------------|-----------------------------------------------------|
+| DOC302 | Invalid exception type syntax | Ensures exceptions conform to valid Python syntax.  |
+| DOC305 | Duplicated exception type     | Prevents repetition of exceptions in the docstring. |
 
 ## Development
 

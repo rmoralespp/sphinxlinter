@@ -170,3 +170,45 @@ def dummy():
         printer.assert_has_calls(tuple(map(unittest.mock.call, expected)))
         checker.assert_called_once_with(node, violations)
         assert not result
+
+    @pytest.mark.parametrize("value", ("ALL", ("ALL", "FOO")))
+    def test_enable_all(self, value):
+        expected = frozenset(name for name in dir(sphinxlinter.Violations) if name.startswith("DOC"))
+        obj = sphinxlinter.Violations(enable=value)
+        result = obj.valid
+        assert result == expected
+
+    @pytest.mark.parametrize(
+        "enable,disable,expected",
+        (
+            ((1,), (1,), frozenset()),
+            ((1,), (2,), frozenset((1,))),
+            ((1, 2, 3), (2,), frozenset((1, 3))),
+        ),
+    )
+    def test_disable(self, enable, disable, expected):
+        obj = sphinxlinter.Violations(enable=enable, disable=disable)
+        result = obj.valid
+        assert result == expected
+
+    def test_discover(self):
+        # Test code not in valid rules.
+        parsed = object()
+        parameters = object()
+        has_returns = object()
+        is_implemented = object()
+        obj = sphinxlinter.Violations(enable=(1, 3))
+        values = (
+            ((True, 1, "msg1"), "ctx1"),
+            ((False, 2, "msg2"), "ctx2"),
+            ((False, 3, "msg3"), "ctx3"),
+        )
+        expected = (
+            ((1, "msg1"), "ctx1"),
+            ((3, "msg3"), "ctx3"),
+        )
+        with unittest.mock.patch.object(obj, "discover_all", return_value=values) as discovered:
+            result = tuple(obj.discover(parsed, parameters, has_returns, is_implemented))
+
+        discovered.assert_called_once_with(parsed, parameters, has_returns, is_implemented)
+        assert result == expected
