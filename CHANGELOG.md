@@ -1,6 +1,9 @@
 ## Releases
 
+### v0.0.3 (2025-09-18)
+
 - **Added:** Arguments "--enable" and "--disable" to control specific checks.
+- **Changed:** Update README.md to include installation instructions.
 
 ### v0.0.2 (2025-09-17)
 
