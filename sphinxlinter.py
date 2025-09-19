@@ -2,6 +2,7 @@
 
 import argparse
 import ast
+import collections
 import inspect
 import itertools
 import logging
@@ -109,6 +110,7 @@ class Violations:
             selected.difference_update(disable)
 
         self.valid = frozenset(selected)
+        self.stats = collections.Counter()
 
     @staticmethod
     def is_valid_syntax(value, /):
@@ -235,6 +237,7 @@ class Violations:
     def discover(self, parsed, parameters, has_returns, is_implemented, /):
         for (_, code, msg), ctx in self.discover_all(parsed, parameters, has_returns, is_implemented):
             if code in self.valid:
+                self.stats[code] += 1
                 yield ((code, msg), ctx)
 
 
@@ -475,12 +478,8 @@ def get_params(node, /):
 
 def check_node(filename, node, violations, /):
     fmt = "{}:{}: [{}] {}".format
-    result = True
     for lineno, code, msg, ctx in checker(node, violations):
         print(fmt(filename, lineno, code, msg.format(*ctx)))
-        result = False
-
-    return result
 
 
 def walk_module(data, filename, /):
@@ -505,49 +504,79 @@ def walk_module(data, filename, /):
 
 
 def walk(paths, ignore_dirs, /):
-    ignore_dirs = frozenset(ignore_dirs)
-    for path in paths:
-        if os.path.isfile(path) and path.endswith(".py"):
-            yield pathlib.Path(path)
-        elif os.path.isdir(path):
-            for rpath in pathlib.Path(path).rglob("*.py"):
-                if not any(part in ignore_dirs for part in rpath.parts):  # Skip ignored dirs
-                    yield rpath
+    suffix = ".py"
+    for item in paths:
+        path = pathlib.Path(item)
+        if path.is_file():
+            # The user requested this file.
+            # return it even if it does not end with .py
+            yield path
+        elif path.is_dir():
+            for root, directories, files in path.walk():
+                # Remove ignored directories
+                for candidate in frozenset(directories).intersection(ignore_dirs):
+                    directories.remove(candidate)
+
+                for name in files:
+                    if name.endswith(suffix):
+                        yield root / name
+
+
+def dump_statistics(violations, /):
+    for key, count in sorted(violations.stats.items(), key=operator.itemgetter(1)):
+        print("{:4} - {}: {}".format(count, key, getattr(violations, key)[2]))
+    print("\nFound {} errors.".format(sum(violations.stats.values())))
 
 
 def main():
     logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 
-    ignore = [".venv", ".env", ".git", ".pytest_cache", ".ruff_cache", "__pycache__", "site-packages"]
     parser = argparse.ArgumentParser(description="Sphinx docstring checker")
-    parser.add_argument("files", nargs="*", help="files or dirs to check", default=[os.getcwd()])
-    parser.add_argument("--ignore", nargs="*", help="directories to ignore", default=ignore)
-
+    parser.add_argument(
+        "files",
+        nargs=argparse.ZERO_OR_MORE,
+        default=[os.path.curdir],
+        help="files or directories to check",
+    )
+    parser.add_argument(
+        "--statistics",
+        action="store_const",
+        const=True,
+        default=False,
+        help="Show counts for every rule with at least one violation",
+    )
+    parser.add_argument(
+        "--ignore",
+        nargs=argparse.ZERO_OR_MORE,
+        default=[".venv", ".env"],
+        help="directories to ignore",
+    )
     parser.add_argument(
         "--enable",
-        nargs="*",
+        nargs=argparse.ZERO_OR_MORE,
         type=str.upper,
-        help="Violation codes to enable (or ALL, to enable all)",
         default=[],
+        help="Violation codes to enable (or ALL, to enable all)",
     )
     parser.add_argument(
         "--disable",
-        nargs="*",
+        nargs=argparse.ZERO_OR_MORE,
         type=str.upper,
-        help="Violation codes to disable",
         default=[],
+        help="Violation codes to disable",
     )
-    result = False
 
     args = parser.parse_args()
     violations = Violations(enable=args.enable, disable=args.disable)
     for path in walk(args.files, args.ignore):
         filename = str(path)
         for node in walk_module(path.read_bytes(), filename):
-            if not check_node(filename, node, violations):
-                result = True
+            check_node(filename, node, violations)
 
-    return 1 if result else 0
+    if args.statistics and violations.stats:
+        dump_statistics(violations)
+
+    return 0 if not violations.stats else 1
 
 
 if __name__ == "__main__":

@@ -147,7 +147,7 @@ def dummy():
             result = sphinxlinter.check_node(filename, node, violations)
 
         checker.assert_called_once_with(node, violations)
-        assert result
+        assert result is None
 
     def test_check_node_warnings(self):
         filename = "foo"
