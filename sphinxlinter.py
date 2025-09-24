@@ -478,7 +478,8 @@ def get_params(node, /):
 
 def check_node(filename, node, violations, /):
     fmt = "{}:{}: [{}] {}".format
-    for lineno, code, msg, ctx in checker(node, violations):
+    getter = operator.itemgetter(0)  # lineno
+    for lineno, code, msg, ctx in sorted(checker(node, violations), key=getter):
         print(fmt(filename, lineno, code, msg.format(*ctx)))
 
 
@@ -543,7 +544,7 @@ def main():
         action="store_const",
         const=True,
         default=False,
-        help="Show counts for every rule with at least one violation",
+        help="show counts for every rule with at least one violation",
     )
     parser.add_argument(
         "--ignore",

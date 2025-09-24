@@ -1,5 +1,6 @@
 ## Releases
 
+- **Added:** Sort warning by line number.
 - **Added:** Option `--statistics`: to show counts for every rule with at least one violation.
 - **Fixed:** Bug in walking directories when using `--ignore` option.
 

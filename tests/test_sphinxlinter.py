@@ -154,8 +154,9 @@ def dummy():
         node = object()
         violations = object()
         lines = (
-            (1, "CODE001", "message", tuple()),
+            # unsorted line numbers
             (3, "CODE00X", "bar {}-{}", (True, 5)),
+            (1, "CODE001", "message", tuple()),
         )
         expected = (
             "foo:1: [CODE001] message",
