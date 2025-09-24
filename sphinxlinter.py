@@ -476,11 +476,9 @@ def get_params(node, /):
         yield ("return", ast.unparse(node.returns))
 
 
-def check_node(filename, node, violations, /):
-    fmt = "{}:{}: [{}] {}".format
-    getter = operator.itemgetter(0)  # lineno
-    for lineno, code, msg, ctx in sorted(checker(node, violations), key=getter):
-        print(fmt(filename, lineno, code, msg.format(*ctx)))
+def check_node(node, violations, /):
+    for lineno, code, msg, ctx in checker(node, violations):
+        yield (lineno, code, msg.format(*ctx))
 
 
 def walk_module(data, filename, /):
@@ -526,7 +524,21 @@ def walk(paths, ignore_dirs, /):
 def dump_statistics(violations, /):
     for key, count in sorted(violations.stats.items(), key=operator.itemgetter(1)):
         print("{:4} - {}: {}".format(count, key, getattr(violations, key)[2]))
+
     print("\nFound {} errors.".format(sum(violations.stats.values())))
+
+
+def dump_file(violations, path, /):
+
+    def worker(content):
+        for node in walk_module(content, filename):
+            yield from check_node(node, violations)
+
+    getter = operator.itemgetter(0)  # lineno
+    filename = str(path)
+    fmt = "{}:{{}}: [{{}}] {{}}".format(filename).format
+    for lineno, code, msg in sorted(worker(path.read_bytes()), key=getter):
+        print(fmt(lineno, code, msg))
 
 
 def main():
@@ -570,9 +582,7 @@ def main():
     args = parser.parse_args()
     violations = Violations(enable=args.enable, disable=args.disable)
     for path in walk(args.files, args.ignore):
-        filename = str(path)
-        for node in walk_module(path.read_bytes(), filename):
-            check_node(filename, node, violations)
+        dump_file(violations, path)
 
     if args.statistics and violations.stats:
         dump_statistics(violations)

@@ -139,18 +139,16 @@ def dummy():
         walker.assert_called_once_with(guard)
 
     def test_check_node_no_warnings(self):
-        filename = object()
         node = object()
         violations = object()
         lines = tuple()
         with unittest.mock.patch("sphinxlinter.checker", return_value=lines) as checker:
-            result = sphinxlinter.check_node(filename, node, violations)
+            result = tuple(sphinxlinter.check_node(node, violations))
 
         checker.assert_called_once_with(node, violations)
-        assert result is None
+        assert not result
 
     def test_check_node_warnings(self):
-        filename = "foo"
         node = object()
         violations = object()
         lines = (
@@ -159,18 +157,16 @@ def dummy():
             (1, "CODE001", "message", tuple()),
         )
         expected = (
-            "foo:1: [CODE001] message",
-            "foo:3: [CODE00X] bar True-5",
+            (3, "CODE00X", "bar True-5"),
+            (1, "CODE001", "message"),
         )
         with (
             unittest.mock.patch("sphinxlinter.checker", return_value=lines) as checker,
-            unittest.mock.patch("sphinxlinter.print") as printer,
         ):
-            result = sphinxlinter.check_node(filename, node, violations)
+            result = tuple(sphinxlinter.check_node(node, violations))
 
-        printer.assert_has_calls(tuple(map(unittest.mock.call, expected)))
         checker.assert_called_once_with(node, violations)
-        assert not result
+        assert result == expected
 
     @pytest.mark.parametrize("value", ("ALL", ("ALL", "FOO")))
     def test_enable_all(self, value):
