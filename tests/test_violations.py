@@ -70,10 +70,12 @@ def foo():
     ("return", ":return",),  # missing separator ":" and description
     ("return", ":return:",),  # missing description
     ("return", ":return: ",),  # missing description (only spaces)
+    ("return", ":return value: description",),  # invalid return name (should be empty)
     # rtype
     ("rtype", ":rtype",),  # missing separator ":" and type
     ("rtype", ":rtype:",),  # missing type
     ("rtype", ":rtype: ",),  # missing type (only spaces)
+    ("rtype", ":rtype value: description",),  # invalid return name (should be empty)
     # raises
     ("raises", ":raises",),  # missing separator ":" and exception
     ("raises", ":raises:",),  # missing exception

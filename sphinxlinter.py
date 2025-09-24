@@ -43,6 +43,7 @@ class ParsedDocsReturn(typing.NamedTuple):
     sep: bool  # True if ':' was present
     return_type: str | None
     description: str | None  # Only for ´:return:´
+    section_key_context: str | None  # (e.g. ´:return context: description´`) - not valid
 
 
 class ParsedDocsRaise(typing.NamedTuple):
@@ -184,10 +185,10 @@ class Violations:
 
         bag = set()
         for doc_return in parsed.returns:
-            section_key, sep, return_type, description = doc_return
+            section_key, sep, return_type, description, section_key_context = doc_return
             # Malformed return: missing ':' or missing type/description when required
-            if not sep:
-                # Missing ':' separator
+            if not sep or section_key_context:
+                # Missing ':' separator or invalid context (e.g. ´:return context: description´)
                 yield cls.DOC002, (section_key,)
             elif section_key in return_set and not description:
                 # :return:´ without description
@@ -267,12 +268,17 @@ def parse_section_type(section_key, sep, parts_a, parts_b, /):
     return ParsedDocsParam(section_key, sep, param_name, param_type)
 
 
-def parse_section_rtype(section_key, sep, parts_b, /):
+def parse_section_rtype(section_key, sep, parts_a, parts_b, /):
+    if len(parts_a) > 1:
+        section_key_context = " ".join(parts_a[1:])  # e.g. ´:rtype context: type´
+    else:
+        section_key_context = None
+
     if parts_b:  # ´:rtype: [ReturnType]´
         return_type = " ".join(parts_b)
     else:  # ´:rtype:´ (without type)
         return_type = None
-    return ParsedDocsReturn(section_key, sep, return_type, None)
+    return ParsedDocsReturn(section_key, sep, return_type, None, section_key_context)
 
 
 def parse_section_raise(section_key, sep, parts_a, /):
@@ -284,11 +290,16 @@ def parse_section_raise(section_key, sep, parts_a, /):
 
 
 def parse_section_return(section_key, sep, parts_a, parts_b, /):
+    if len(parts_a) > 1:
+        section_key_context = " ".join(parts_a[1:])  # e.g. ´:return context: description´
+    else:
+        section_key_context = None
+
     if parts_b:  # ´:return: [ReturnDescription]´
         description = " ".join(parts_b)
     else:  # ´:return:´ (without description)
         description = None
-    return ParsedDocsReturn(section_key, sep, None, description)
+    return ParsedDocsReturn(section_key, sep, None, description, section_key_context)
 
 
 def itersections(docstring, /):
@@ -323,7 +334,7 @@ def parse_docs(node, /):
         elif section_key == ptype_key:
             params.append(parse_section_type(section_key, sep, parts_a, parts_b))
         elif section_key in rtype_key:
-            returns.append(parse_section_rtype(section_key, sep, parts_b))
+            returns.append(parse_section_rtype(section_key, sep, parts_a, parts_b))
         elif section_key in raises_set:
             raises.append(parse_section_raise(section_key, sep, parts_a))
         elif section_key in return_set:

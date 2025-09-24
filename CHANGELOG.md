@@ -1,5 +1,8 @@
 ## Releases
 
+- **Improved:** `DOC002` to strengthen detection of malformed section(return, rtype) docstring.
+- **Fixed:** Sort warning by line number.
+
 ### v0.0.4 (2025-09-24)
 
 - **Added:** Sort warning by line number.
