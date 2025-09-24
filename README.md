@@ -23,7 +23,7 @@ format ([ref](https://sphinx-rtd-tutorial.readthedocs.io/en/latest/docstrings.ht
 """[Summary]
 
 :param [ParamType] [ParamName]: [ParamDescription]
-:type [ParamName]: 
+:type [ParamName]: [ParamType] 
 ...
 :raises [ErrorType]: [ErrorDescription]
 ...
