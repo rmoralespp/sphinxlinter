@@ -12,6 +12,7 @@ import pathlib
 import re
 import sys
 import typing
+import warnings
 
 # Docstring sections: https://www.sphinx-doc.org/en/master/usage/domains/python.html#info-field-lists
 ptype_key = "type"
@@ -612,6 +613,9 @@ def main():
         help="Violation codes to disable",
     )
 
+    # Disable SyntaxWarnings to reduce output noise from python parser
+    #   for example: SyntaxWarning: invalid escape sequence
+    warnings.simplefilter("ignore", SyntaxWarning)
     args = parser.parse_args()
     violations = Violations(enable=args.enable, disable=args.disable)
     for path in walk(args.files, args.ignore):

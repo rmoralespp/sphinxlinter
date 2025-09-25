@@ -1,5 +1,7 @@
 ## Releases
 
+- **Added:** Disable SyntaxWarnings to reduce output noise from python parser
+
 ### v0.0.6 (2025-09-25)
 
 - **Added:** `DOC007` to check for misplaced sections in docstrings.
