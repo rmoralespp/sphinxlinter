@@ -1,5 +1,7 @@
 ## Releases
 
+### v0.0.6 (2025-09-25)
+
 - **Added:** `DOC007` to check for misplaced sections in docstrings.
 - **Added:** Option `--quiet` to suppress output, except statistics if `--statistics` is set.
 
