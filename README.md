@@ -131,6 +131,7 @@ Notes
 | DOC004 | Missing blank line between summary and sections | Maintains clarity and standard docstring structure.        |
 | DOC005 | Too many consecutive empty lines                | Avoids unnecessary whitespace, keeping docstrings clean.   |
 | DOC006 | Trailing empty lines                            | Ensures docstrings do not contain superfluous blank lines. |
+| DOC007 | Misplaced section                               | Ensures docstrings sections are correctly located.         |
 
 ### DOC1xx: Parameter issues
 

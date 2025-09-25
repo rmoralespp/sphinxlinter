@@ -268,6 +268,49 @@ def foo(a):
     assert result == expected
 
 
+def test_DOC106_single(violations):
+    content = '''
+def foo(a, b):
+    """
+    Title.
+
+    :param int a: description
+    :raises ValueError: description
+    :param int b: description
+    """
+
+    pass
+'''
+    expected = (
+        (3, 'DOC007', 'Misplaced section ({!r} after {!r})', ('param', 'raises',)),
+    )
+    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    assert result == expected
+
+
+def test_DOC106_multiple(violations):
+    content = '''
+def foo(a, b, c):
+    """
+    Title.
+
+    :raises ValueError: description
+    :param int b: description
+    :return: description
+    :type c: int
+    """
+
+    pass
+'''
+    expected = (
+        (3, 'DOC007', 'Misplaced section ({!r} after {!r})', ('param', 'raises')),
+        (3, 'DOC007', 'Misplaced section ({!r} after {!r})', ('type', 'raises')),
+        (3, 'DOC007', 'Misplaced section ({!r} after {!r})', ('type', 'return')),
+    )
+    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    assert result == expected
+
+
 @pytest.mark.parametrize("value", [":return: description", ":rtype: int"])
 def test_DOC201(value, violations):
     content = f'''
@@ -400,6 +443,27 @@ def foo():
 
     expected = (
         ((3, "DOC305", "Duplicated exception type ({!r})", ("ValueError",)),)
+    )
+    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    assert result == expected
+
+
+@pytest.mark.parametrize("return_key, return_section", [("rtype", ":rtype: int"), ("return", ":return: description)")])
+def test_DOC306(violations, return_key, return_section):
+    content = f'''
+def foo():
+    """
+    Title.
+
+    {return_section}
+    :raises ValueError: description
+    """
+
+    pass
+'''
+
+    expected = (
+        (3, "DOC007", "Misplaced section ({!r} after {!r})", ('raises', return_key)),
     )
     result = tuple(sphinxlinter.checker(parse_content(content), violations))
     assert result == expected

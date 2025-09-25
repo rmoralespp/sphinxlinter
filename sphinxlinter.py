@@ -36,6 +36,7 @@ class ParsedDocsParam(typing.NamedTuple):
     sep: bool  # True if ':' was present
     param_name: str | None
     param_type: str | None
+    order: int  # Order of appearance in the docstring
 
 
 class ParsedDocsReturn(typing.NamedTuple):
@@ -43,13 +44,15 @@ class ParsedDocsReturn(typing.NamedTuple):
     sep: bool  # True if ':' was present
     return_type: str | None
     description: str | None  # Only for ´:return:´
-    section_key_context: str | None  # (e.g. ´:return context: description´`) - not valid
+    section_ctx: bool  # True if context was present (e.g. ´:return context: description´ or ´:rtype context: type´)
+    order: int  # Order of appearance in the docstring
 
 
 class ParsedDocsRaise(typing.NamedTuple):
     section_key: str
     sep: bool  # True if ':' was present
     error_types: list[str]
+    order: int  # Order of appearance in the docstring
 
 
 class ParsedDocs(typing.NamedTuple):
@@ -77,8 +80,9 @@ class Violations:
     DOC004 = (True, "DOC004", "Missing blank line between summary and sections")
     DOC005 = (True, "DOC005", "Too many consecutive empty lines")
     DOC006 = (True, "DOC006", "Trailing empty lines")
+    DOC007 = (True, "DOC007", "Misplaced section ({!r} after {!r})")
 
-    # DOC1xx: Argument issues
+    # DOC1xx: Parameter issues
     DOC101 = (True, "DOC101", "Parameter documented but not in signature ({!r})")
     DOC102 = (True, "DOC102", "Invalid parameter type syntax ({!r})")
     DOC103 = (True, "DOC103", "Parameter type already in signature ({!r})")
@@ -92,9 +96,11 @@ class Violations:
     DOC204 = (True, "DOC204", "Return type mismatch with annotation ({!r} != {!r})")
     DOC205 = (True, "DOC205", "Duplicated return section ({!r})")
 
-    # DOC3xx: Raise issues
+    # DOC3xx: Raises issues
     DOC302 = (True, "DOC302", "Invalid exception type syntax ({!r})")
     DOC305 = (True, "DOC305", "Duplicated exception type ({!r})")
+
+    _get_order = operator.attrgetter("order")
 
     def __init__(self, /, *, enable=None, disable=None):
         is_rule = re.compile("^DOC\\d+$").match
@@ -114,23 +120,16 @@ class Violations:
         self.stats = collections.Counter()
 
     @staticmethod
-    def is_valid_syntax(value, /):
+    def is_valid_syntax(value, /, mode="eval"):
         try:
-            ast.parse(value, mode="eval")
+            ast.parse(value, mode=mode)
             return True
         except SyntaxError:
             return False
 
     @classmethod
     def is_valid_type_hint(cls, hint, /):
-        if hint:
-            try:
-                ast.parse(f"x: {hint}")
-                return True
-            except SyntaxError:
-                return False
-        else:
-            return False
+        return cls.is_valid_syntax(f"x: {hint}", mode="exec") if hint else False
 
     @classmethod
     def validate_empty_lines(cls, parsed, /):
@@ -159,8 +158,10 @@ class Violations:
     @classmethod
     def validate_params(cls, parsed, parameters, /):
         bag = set()
+        first_raises = min(parsed.raises, key=cls._get_order, default=None)
+        first_return = min(parsed.returns, key=cls._get_order, default=None)
         for param in parsed.params:
-            section_key, sep, name, kind = param
+            section_key, sep, name, kind, order = param
             type_hint = parameters.get(name)
             # Malformed param: missing ':' or missing name/type when required
             if not (sep and name) or (section_key == ptype_key and not kind):
@@ -173,8 +174,17 @@ class Violations:
                 yield cls.DOC103, (kind,)
             if kind and type_hint and kind != type_hint:  # Mismatched type
                 yield cls.DOC104, (kind, type_hint)
+
             if name and name in bag:  # Duplicated parameter
                 yield cls.DOC105, (name,)
+
+            if order and first_raises and order > first_raises.order:
+                # Params after raises are considered misplaced
+                yield cls.DOC007, (section_key, first_raises.section_key,)
+            if order and first_return and order > first_return.order:
+                # Params after returns are considered misplaced
+                yield cls.DOC007, (section_key, first_return.section_key,)
+
             if name:
                 bag.add(name)
 
@@ -185,10 +195,10 @@ class Violations:
 
         bag = set()
         for doc_return in parsed.returns:
-            section_key, sep, return_type, description, section_key_context = doc_return
-            # Malformed return: missing ':' or missing type/description when required
-            if not sep or section_key_context:
-                # Missing ':' separator or invalid context (e.g. ´:return context: description´)
+            section_key, sep, return_type, description, section_key_ctx, order = doc_return
+            # Malformed return: missing ':' or missing type/description when required or invalid context
+            if not sep or section_key_ctx:
+                # Missing ':' separator or invalid context (section_key_ctx is True)
                 yield cls.DOC002, (section_key,)
             elif section_key in return_set and not description:
                 # :return:´ without description
@@ -210,7 +220,9 @@ class Violations:
     @classmethod
     def validate_raises(cls, parsed, /):
         bag = set()
-        for section_key, sep, error_types in parsed.raises:
+        first_return = min(parsed.returns, key=cls._get_order, default=None)
+
+        for section_key, sep, error_types, order in parsed.raises:
             if not (sep and error_types):  # Missing ':' or missing error types
                 yield cls.DOC002, (section_key,)
 
@@ -222,6 +234,10 @@ class Violations:
                 if error_type in bag:  # Duplicate exception type
                     yield cls.DOC305, (error_type,)
                 bag.add(error_type)
+
+            if order and first_return and order > first_return.order:
+                # Raises after returns are considered misplaced
+                yield cls.DOC007, (section_key, first_return.section_key,)
 
     @classmethod
     def discover_all(cls, parsed, parameters, has_returns, is_implemented, /):
@@ -242,7 +258,7 @@ class Violations:
                 yield ((code, msg), ctx)
 
 
-def parse_section_param(section_key, sep, parts_a, /):
+def parse_section_param(section_key, sep, parts_a, order, /):
     if len(parts_a) == 1:  # ´:param:´
         param_name = None
         param_type = None
@@ -252,10 +268,10 @@ def parse_section_param(section_key, sep, parts_a, /):
     else:  # ´:param [ParamType] [ParamName]:´
         param_type = " ".join(parts_a[1:-1])  # unsplit type
         param_name = parts_a[-1]
-    return ParsedDocsParam(section_key, sep, param_name, param_type)
+    return ParsedDocsParam(section_key, sep, param_name, param_type, order)
 
 
-def parse_section_type(section_key, sep, parts_a, parts_b, /):
+def parse_section_type(section_key, sep, parts_a, parts_b, order, /):
     if len(parts_a) == 1:  # ´:type:´
         param_name = None
     else:  # >=2   ´:type [ParamName]:´
@@ -265,41 +281,33 @@ def parse_section_type(section_key, sep, parts_a, parts_b, /):
         param_type = " ".join(parts_b)
     else:  # ´:type [ParamName]:´ (without type)
         param_type = None
-    return ParsedDocsParam(section_key, sep, param_name, param_type)
+    return ParsedDocsParam(section_key, sep, param_name, param_type, order)
 
 
-def parse_section_rtype(section_key, sep, parts_a, parts_b, /):
-    if len(parts_a) > 1:
-        section_key_context = " ".join(parts_a[1:])  # e.g. ´:rtype context: type´
-    else:
-        section_key_context = None
-
+def parse_section_rtype(section_key, sep, parts_a, parts_b, order, /):
+    section_key_ctx = len(parts_a) > 1  # e.g. ´:rtype context: type´
     if parts_b:  # ´:rtype: [ReturnType]´
         return_type = " ".join(parts_b)
     else:  # ´:rtype:´ (without type)
         return_type = None
-    return ParsedDocsReturn(section_key, sep, return_type, None, section_key_context)
+    return ParsedDocsReturn(section_key, sep, return_type, None, section_key_ctx, order)
 
 
-def parse_section_raise(section_key, sep, parts_a, /):
+def parse_section_raise(section_key, sep, parts_a, order, /):
     if len(parts_a) == 1:  # ´:raise [ErrorType]: [ErrorDescription]´
         error_types = []
     else:  # >=2  ´:raise [ErrorType1, ErrorType2]: [ErrorDescription]´
         error_types = "".join(parts_a[1:]).split(",")  # commas separate multiple error types
-    return ParsedDocsRaise(section_key, sep, error_types)
+    return ParsedDocsRaise(section_key, sep, error_types, order)
 
 
-def parse_section_return(section_key, sep, parts_a, parts_b, /):
-    if len(parts_a) > 1:
-        section_key_context = " ".join(parts_a[1:])  # e.g. ´:return context: description´
-    else:
-        section_key_context = None
-
+def parse_section_return(section_key, sep, parts_a, parts_b, order, /):
+    section_key_ctx = len(parts_a) > 1  # e.g. ´:return context: description´
     if parts_b:  # ´:return: [ReturnDescription]´
         description = " ".join(parts_b)
     else:  # ´:return:´ (without description)
         description = None
-    return ParsedDocsReturn(section_key, sep, None, description, section_key_context)
+    return ParsedDocsReturn(section_key, sep, None, description, section_key_ctx, order)
 
 
 def itersections(docstring, /):
@@ -322,7 +330,7 @@ def parse_docs(node, /):
     rawdocs = ast.get_docstring(node, clean=False)
     docstring = rawdocs if rawdocs is None else inspect.cleandoc(rawdocs)
 
-    for section in itersections(docstring):
+    for order, section in enumerate(itersections(docstring)):
         a, sep, b = section.lstrip(":").partition(":")
         sep = bool(sep)  # True if ':' was present
         b = b.splitlines()[0].strip() if (b := b.strip()) else ""  # Only first line of description is relevant.
@@ -330,15 +338,15 @@ def parse_docs(node, /):
         parts_b = b.split()
         section_key = parts_a[0].lower()
         if section_key in param_set:
-            params.append(parse_section_param(section_key, sep, parts_a))
+            params.append(parse_section_param(section_key, sep, parts_a, order))
         elif section_key == ptype_key:
-            params.append(parse_section_type(section_key, sep, parts_a, parts_b))
+            params.append(parse_section_type(section_key, sep, parts_a, parts_b, order))
         elif section_key in rtype_key:
-            returns.append(parse_section_rtype(section_key, sep, parts_a, parts_b))
+            returns.append(parse_section_rtype(section_key, sep, parts_a, parts_b, order))
         elif section_key in raises_set:
-            raises.append(parse_section_raise(section_key, sep, parts_a))
+            raises.append(parse_section_raise(section_key, sep, parts_a, order))
         elif section_key in return_set:
-            returns.append(parse_section_return(section_key, sep, parts_a, parts_b))
+            returns.append(parse_section_return(section_key, sep, parts_a, parts_b, order))
         elif section_key not in ignore_set:
             invalid.append(section_key)
 
@@ -540,7 +548,6 @@ def dump_statistics(violations, /):
 
 
 def dump_file(violations, path, /):
-
     def worker(content):
         for node in walk_module(content, filename):
             yield from check_node(node, violations)

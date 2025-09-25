@@ -1,5 +1,7 @@
 ## Releases
 
+- **Added:** `DOC007` to check for misplaced sections in docstrings.
+
 ### v0.0.5 (2025-09-24)
 
 - **Improved:** `DOC002` to strengthen detection of malformed section(return, rtype) docstring.
