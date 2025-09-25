@@ -109,17 +109,19 @@ def dummy():
         result = sphinxlinter.parse_docs(ast.parse(content).body[0])
         assert result == expected
 
-    def test_walk_module_syntax_error(self):
+    @pytest.mark.parametrize("quiet", (False, True))
+    def test_walk_module_syntax_error(self, quiet):
         data = object()
         filename = object()
         expected = tuple()
         with unittest.mock.patch("sphinxlinter.ast.parse", side_effect=SyntaxError) as parser:
-            result = tuple(sphinxlinter.walk_module(data, filename))
+            result = tuple(sphinxlinter.walk_module(quiet, data, filename))
 
         assert result == expected
         parser.assert_called_once_with(data, filename=filename)
 
-    def test_walk_module(self):
+    @pytest.mark.parametrize("quiet", (False, True))
+    def test_walk_module(self, quiet):
         data = object()
         filename = object()
         guard = object()
@@ -132,7 +134,7 @@ def dummy():
             unittest.mock.patch("sphinxlinter.ast.parse", return_value=guard) as parser,
             unittest.mock.patch("sphinxlinter.ast.walk", return_value=walk) as walker,
         ):
-            result = tuple(sphinxlinter.walk_module(data, filename))
+            result = tuple(sphinxlinter.walk_module(quiet, data, filename))
 
         assert result == expected
         parser.assert_called_once_with(data, filename=filename)

@@ -88,6 +88,7 @@ sphinxlinter path/to/file_or_dir ...
 * `--disable`: Violation codes to disable, by default none are disabled. **Takes precedence over `--enable`**.
 * `--ignore`: Directories to exclude from analysis (for example `venv`, `.cache`).
 * `--statistics`: Show counts for every rule with at least one violation.
+* `--quiet`: Suppresses all output except the statistics summary if `--statistics` is also set.
 
 ## Violation reporting
 

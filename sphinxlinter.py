@@ -7,7 +7,7 @@ import inspect
 import itertools
 import logging
 import operator
-import os
+import os.path
 import pathlib
 import re
 import sys
@@ -381,6 +381,7 @@ def has_return_or_yield(node, /):
     (excluding nested functions).
 
     :param ast.FunctionDef | ast.AsyncFunctionDef node: Root node to explore.
+
     :return: Whether the function has either "return" or "yield".
     :rtype: bool
     """
@@ -427,6 +428,8 @@ def is_not_implemented(node, /, rawdocs=None):
 
     :param ast.FunctionDef | ast.AsyncFunctionDef node: Root node to explore.
     :param str | None rawdocs: Raw docstring.
+
+    :rtype: bool
     """
 
     if rawdocs and len(node.body) > 2 or (not rawdocs and len(node.body) > 1):
@@ -500,12 +503,14 @@ def check_node(node, violations, /):
         yield (lineno, code, msg.format(*ctx))
 
 
-def walk_module(data, filename, /):
+def walk_module(quiet, data, filename, /):
     """
     Yields each function node from the parsed "data" tree.
 
+    :param bool quiet: If False, print warnings to stderr.
     :param bytes data: Content to parse.
     :param str filename: File name to use when printing messages.
+
     :return: Each root node of every function/method.
     :rtype: Iterator[ast.FunctionDef | ast.AsyncFunctionDef]
     """
@@ -513,7 +518,8 @@ def walk_module(data, filename, /):
     try:
         tree = ast.parse(data, filename=filename)
     except SyntaxError as e:
-        logging.warning("%s: %s", filename, e)
+        if not quiet:
+            logging.warning("%s: %s", filename, e)
     else:
         klasses = (ast.FunctionDef, ast.AsyncFunctionDef)
         for node in ast.walk(tree):
@@ -547,16 +553,17 @@ def dump_statistics(violations, /):
     print("\nFound {} errors.".format(sum(violations.stats.values())))
 
 
-def dump_file(violations, path, /):
+def dump_file(violations, quiet, path, /):
     def worker(content):
-        for node in walk_module(content, filename):
+        for node in walk_module(quiet, content, filename):
             yield from check_node(node, violations)
 
     getter = operator.itemgetter(0)  # lineno
     filename = str(path)
     fmt = "{}:{{}}: [{{}}] {{}}".format(filename).format
     for lineno, code, msg in sorted(worker(path.read_bytes()), key=getter):
-        print(fmt(lineno, code, msg))
+        if not quiet:
+            print(fmt(lineno, code, msg))
 
 
 def main():
@@ -575,6 +582,14 @@ def main():
         const=True,
         default=False,
         help="show counts for every rule with at least one violation",
+    )
+    # TODO: Reduce noise, python might dump some warnings to stderr (SyntaxWarning).
+    parser.add_argument(
+        "--quiet",
+        action="store_const",
+        const=True,
+        default=False,
+        help="print diagnostics, but nothing else",
     )
     parser.add_argument(
         "--ignore",
@@ -600,7 +615,7 @@ def main():
     args = parser.parse_args()
     violations = Violations(enable=args.enable, disable=args.disable)
     for path in walk(args.files, args.ignore):
-        dump_file(violations, path)
+        dump_file(violations, args.quiet, path)
 
     if args.statistics and violations.stats:
         dump_statistics(violations)
