@@ -178,10 +178,10 @@ class Violations:
             if name and name in bag:  # Duplicated parameter
                 yield cls.DOC105, (name,)
 
-            if order and first_raises and order > first_raises.order:
+            if first_raises and order > first_raises.order:
                 # Params after raises are considered misplaced
                 yield cls.DOC007, (section_key, first_raises.section_key,)
-            if order and first_return and order > first_return.order:
+            if first_return and order > first_return.order:
                 # Params after returns are considered misplaced
                 yield cls.DOC007, (section_key, first_return.section_key,)
 
@@ -235,7 +235,7 @@ class Violations:
                     yield cls.DOC305, (error_type,)
                 bag.add(error_type)
 
-            if order and first_return and order > first_return.order:
+            if first_return and order > first_return.order:
                 # Raises after returns are considered misplaced
                 yield cls.DOC007, (section_key, first_return.section_key,)
 
