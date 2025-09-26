@@ -171,6 +171,33 @@ def foo(a):
     assert result == expected
 
 
+def test_DOC008_oneline_docstring(violations):
+    content = '''
+def foo(a):
+    """Title"""
+'''
+
+    expected = (
+        (3, "DOC008", "One-line docstring should end with a period", ()),
+    )
+    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    assert result == expected
+
+
+def test_DOC008_mltiline_docstring_no_raise(violations):
+    content = '''
+def foo(a):
+    """
+    A multi-line
+    docstring
+    """
+'''
+
+    expected = ()
+    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    assert result == expected
+
+
 def test_DOC101(violations):
     content = '''
 def foo():

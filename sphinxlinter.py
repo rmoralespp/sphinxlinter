@@ -82,6 +82,9 @@ class Violations:
     DOC005 = (True, "DOC005", "Too many consecutive empty lines")
     DOC006 = (True, "DOC006", "Trailing empty lines")
     DOC007 = (True, "DOC007", "Misplaced section ({!r} after {!r})")
+    # Ruff (missing-trailing-period) → enforces a trailing period on all docstring summaries (one-line and multi-line).
+    # Rule (DOC008) → only enforces a trailing period on one-line docstrings, as recommended by PEP257.
+    DOC008 = (True, "DOC008", "One-line docstring should end with a period")
 
     # DOC1xx: Parameter issues
     DOC101 = (True, "DOC101", "Parameter documented but not in signature ({!r})")
@@ -151,10 +154,13 @@ class Violations:
         if parsed.summary:
             summary_lines = parsed.summary.splitlines()
             br_tail_count = sum(1 for _ in itertools.takewhile(operator.not_, reversed(summary_lines)))
-
-            if br_tail_count == 0 and (parsed.params + parsed.returns + parsed.raises):
+            has_sections = bool(parsed.params + parsed.returns + parsed.raises)
+            if br_tail_count == 0 and has_sections:
                 # Only applies if there are sections after the summary
                 yield cls.DOC004, ()  # Missing blank line between summary and sections
+
+            if not has_sections and len(summary_lines) == 1 and not summary_lines[0].rstrip().endswith('.'):
+                yield cls.DOC008, ()  # Summary should end with a period
 
     @classmethod
     def validate_params(cls, parsed, parameters, /):

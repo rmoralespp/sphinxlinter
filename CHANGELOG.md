@@ -1,6 +1,7 @@
 ## Releases
 
-- **Added:** Disable SyntaxWarnings to reduce output noise from python parser
+- **Added:** Disable SyntaxWarnings to reduce output noise from python parser.
+- **Added:** `DOC008` One-line docstring should end with a period.
 
 ### v0.0.6 (2025-09-25)
 

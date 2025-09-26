@@ -124,15 +124,24 @@ Notes
 
 ### DOC0xx: Docstring section issues
 
-| Code   | Description                                     | Justification                                              |
-|--------|-------------------------------------------------|------------------------------------------------------------|
-| DOC001 | Unknown docstring section                       | Detects sections not recognized by Sphinx conventions.     |
-| DOC002 | Malformed section                               | Ensures sections follow correct Sphinx formatting.         |
-| DOC003 | Missing blank line after docstring              | Improves readability and separates docstrings from code.   |
-| DOC004 | Missing blank line between summary and sections | Maintains clarity and standard docstring structure.        |
-| DOC005 | Too many consecutive empty lines                | Avoids unnecessary whitespace, keeping docstrings clean.   |
-| DOC006 | Trailing empty lines                            | Ensures docstrings do not contain superfluous blank lines. |
-| DOC007 | Misplaced section                               | Ensures docstrings sections are correctly located.         |
+| Code   | Description                                     | Justification                                                                |
+|--------|-------------------------------------------------|------------------------------------------------------------------------------|
+| DOC001 | Unknown docstring section                       | Detects sections not recognized by Sphinx conventions.                       |
+| DOC002 | Malformed section                               | Ensures sections follow correct Sphinx formatting.                           |
+| DOC003 | Missing blank line after docstring              | Improves readability and separates docstrings from code.                     |
+| DOC004 | Missing blank line between summary and sections | Maintains clarity and standard docstring structure.                          |
+| DOC005 | Too many consecutive empty lines                | Avoids unnecessary whitespace, keeping docstrings clean.                     |
+| DOC006 | Trailing empty lines                            | Ensures docstrings do not contain superfluous blank lines.                   |
+| DOC007 | Misplaced section                               | Ensures docstrings sections are correctly located.                           |
+| DOC008 | One-line docstring should end with a period     | Enforces a trailing period on one-line docstrings, as recommended by PEP257. | 
+
+**NOTES**:
+
+**DOC008**: This rule differs from Ruff’s similar rule [
+`missing-trailing-period`](https://docs.astral.sh/ruff/rules/missing-trailing-period),
+which enforces a trailing period on the first line of both one-line and multi-line docstrings. By contrast, the rule
+**DOC008** only enforces a trailing period on *one-line* docstrings, following the recommendation
+in [PEP 257](https://peps.python.org/pep-0257/#one-line-docstrings).
 
 ### DOC1xx: Parameter issues
 
