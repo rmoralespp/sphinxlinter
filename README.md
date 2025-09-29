@@ -155,14 +155,13 @@ in [PEP 257](https://peps.python.org/pep-0257/#one-line-docstrings).
 
 ### DOC2xx: Return issues
 
-| Code   | Description                                              | Justification                                                             |
-|--------|----------------------------------------------------------|---------------------------------------------------------------------------|
-| DOC201 | Return documented but function has no return             | Indicates that it is documented for returns, but has no return statement. |
-| DOC202 | Invalid return type syntax                               | Ensures return type conform to valid Python type hint syntax.             |
-| DOC203 | Return type already in signature                         | Prevents redundant return type hints.                                     |
-| DOC204 | Return type mismatch with annotation                     | Validates consistency with function return type hints.                    |
-| DOC205 | Duplicated return section                                | Avoids repeated return sections in then docstring.                        |
-| DOC206 | Generator is not compatible with documented return type  | Ensures functions with return statements have corresponding docstring.    |
+| Code   | Description                                  | Justification                                                             |
+|--------|----------------------------------------------|---------------------------------------------------------------------------|
+| DOC201 | Return documented but function has no return | Indicates that it is documented for returns, but has no return statement. |
+| DOC202 | Invalid return type syntax                   | Ensures return type conform to valid Python type hint syntax.             |
+| DOC203 | Return type already in signature             | Prevents redundant return type hints.                                     |
+| DOC204 | Return type mismatch with annotation         | Validates consistency with function return type hints.                    |
+| DOC205 | Duplicated return section                    | Avoids repeated return sections in then docstring.                        |
 
 ### DOC3xx: Raises issues
 
