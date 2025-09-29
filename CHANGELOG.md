@@ -1,5 +1,7 @@
 ## Releases
 
+### v0.0.7 (2025-09-29)
+
 - **Added:** Disable SyntaxWarnings to reduce output noise from python parser.
 - **Added:** `DOC008` One-line docstring should end with a period.
 - **Added:** `DOC009` Docstring should use """triple double quotes"""

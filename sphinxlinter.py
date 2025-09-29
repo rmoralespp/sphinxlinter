@@ -30,7 +30,7 @@ section_regex = re.compile(r'(^:.*?)(?=^:|\Z)', flags=re.DOTALL | re.MULTILINE)
 trailing_regex = re.compile("(?:^\\s*$){2,}\\Z", flags=re.MULTILINE)
 # Consecutive empty lines (not at end)
 empty_lines_regex = re.compile("(?:^[ \t]*\r?\n){2,}(?=[^\r\n])", re.MULTILINE)
-
+# Docstring starting or ending with only quotes lines
 quotes_starts_regex = re.compile(r'^"+\s*$')
 quotes_ends_regex = re.compile(r'^\s*"+$')
 
