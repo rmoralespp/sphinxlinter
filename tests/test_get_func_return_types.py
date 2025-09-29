@@ -96,18 +96,28 @@ async def async_yield():  # pragma: no cover
     yield None
 
 
+def returns_gen_expr():  # pragma: no cover
+    yield from (i for i in range(1))  # noqa: C416, RUF100
+
+
+def returns_any():  # pragma: no cover
+    return [i for i in range(1)]  # noqa: C416, RUF100
+
+
 @pytest.mark.parametrize(
     "function, expected",
     (
-        (function_no_return_no_yield, False),
-        (function_return, True),
-        (function_yield, True),
-        (function_yield_from, True),
-        (async_none, False),
-        (async_yield, True),
+        (function_no_return_no_yield, set()),
+        (function_return, {'Any'}),
+        (function_yield, {'Generator'}),
+        (function_yield_from, {'Generator'}),
+        (async_none, set()),
+        (async_yield, {'AsyncGenerator'}),
+        (returns_gen_expr, {'Generator'}),
+        (returns_any, {'Any'}),
     ),
 )
 def test_checker_none(function, expected):
     root = parse_function(function)
-    result = sphinxlinter.has_return_or_yield(root)
+    result = sphinxlinter.get_func_return_types(root)
     assert result == expected
