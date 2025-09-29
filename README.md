@@ -134,6 +134,7 @@ Notes
 | DOC006 | Trailing empty lines                            | Ensures docstrings do not contain superfluous blank lines.                   |
 | DOC007 | Misplaced section                               | Ensures docstrings sections are correctly located.                           |
 | DOC008 | One-line docstring should end with a period     | Enforces a trailing period on one-line docstrings, as recommended by PEP257. | 
+| DOC009 | Docstring should use """triple double quotes""" | Prevents confusion with docstring delimiters                                 |
 
 **NOTES**:
 

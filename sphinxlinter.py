@@ -31,6 +31,9 @@ trailing_regex = re.compile("(?:^\\s*$){2,}\\Z", flags=re.MULTILINE)
 # Consecutive empty lines (not at end)
 empty_lines_regex = re.compile("(?:^[ \t]*\r?\n){2,}(?=[^\r\n])", re.MULTILINE)
 
+quotes_starts_regex = re.compile(r'^"+\s*$')
+quotes_ends_regex = re.compile(r'^\s*"+$')
+
 
 class ParsedDocsParam(typing.NamedTuple):
     section_key: str
@@ -86,6 +89,7 @@ class Violations:
     # Ruff (missing-trailing-period) → enforces a trailing period on all docstring summaries (one-line and multi-line).
     # Rule (DOC008) → only enforces a trailing period on one-line docstrings, as recommended by PEP257.
     DOC008 = (True, "DOC008", "One-line docstring should end with a period")
+    DOC009 = (True, "DOC009", 'Docstring should use """triple double quotes"""')
 
     # DOC1xx: Parameter issues
     DOC101 = (True, "DOC101", "Parameter documented but not in signature ({!r})")
@@ -149,6 +153,14 @@ class Violations:
             present = next(filter(None, hits), None)
             if present:
                 yield cls.DOC006, ()
+
+    @classmethod
+    def validate_head_tail_quotes(cls, parsed, /):
+        text = parsed.rawdocs
+        if text:
+            lines = text.splitlines()
+            if len(lines) > 1 and (quotes_starts_regex.match(lines[0]) or quotes_ends_regex.match(lines[-1])):
+                yield cls.DOC009, ()
 
     @classmethod
     def validate_summary(cls, parsed, /):
@@ -266,6 +278,7 @@ class Violations:
         yield from ((cls.DOC001, (section_key,)) for section_key in parsed.invalid)
 
         yield from cls.validate_empty_lines(parsed)
+        yield from cls.validate_head_tail_quotes(parsed)
         yield from cls.validate_summary(parsed)
         yield from cls.validate_params(parsed, parameters)
         yield from cls.validate_return(parsed, parameters.get("return"), has_returns, is_implemented)

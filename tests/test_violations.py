@@ -203,6 +203,42 @@ def foo(a):
     assert result == expected
 
 
+@pytest.mark.parametrize("docs", [
+    '""""\nTitle."""',  # four quotes at the start
+    '"""" \nTitle."""',  # four quotes at the start with space
+])
+def test_DOC009(violations, docs):
+    content = f'''
+def foo():
+    {docs}
+
+    pass
+'''
+
+    expected = ((3, 'DOC009', 'Docstring should use """triple double quotes"""', ()),)
+
+    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    assert result == expected
+
+
+@pytest.mark.parametrize("docs", [
+    '""""Title."""',  # four quotes at the start
+    '"""" foo\nTitle."""',  # four quotes at the start with space because exists more words
+])
+def test_DOC009_no_raise(violations, docs):
+    content = f'''
+def foo():
+    {docs}
+
+    pass
+'''
+    expected = ()
+    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    assert result == expected
+
+
+
+
 def test_DOC101(violations):
     content = '''
 def foo():
