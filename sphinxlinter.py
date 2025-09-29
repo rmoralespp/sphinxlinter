@@ -100,7 +100,6 @@ class Violations:
     DOC203 = (True, "DOC203", "Return type already in signature ({!r})")
     DOC204 = (True, "DOC204", "Return type mismatch with annotation ({!r} != {!r})")
     DOC205 = (True, "DOC205", "Duplicated return section ({!r})")
-    DOC206 = (True, "DOC206", "Generator is not compatible with documented return type ({!r})")
 
     # DOC3xx: Raises issues
     DOC302 = (True, "DOC302", "Invalid exception type syntax ({!r})")
@@ -124,36 +123,6 @@ class Violations:
 
         self.valid = frozenset(selected)
         self.stats = collections.Counter()
-
-    @staticmethod
-    def is_iterator_compatible(hint, is_async, /):
-        wrappers = frozenset(("Optional", "Union", "Annotated"))
-        if is_async:
-            compatible = frozenset(("AsyncGenerator", "AsyncIterator", "AsyncIterable"))
-        else:
-            compatible = frozenset(("Generator", "Iterator", "Iterable"))
-
-        def worker(node):
-            if isinstance(node, ast.Name):  # e.g. "Iterator"
-                return (node.id,)
-            elif isinstance(node, ast.Attribute):  # e.g. "typing.Iterator"
-                return (node.attr,)
-            elif isinstance(node, ast.Subscript):  # e.g. "Iterator[int]"
-                base = worker(node.value)[0]
-                if base in wrappers:
-                    if isinstance(node.slice, ast.Tuple):
-                        return itertools.chain.from_iterable(worker(elt) for elt in node.slice.elts)
-                    else:
-                        return worker(node.slice)
-                else:
-                    return (base,)
-            elif isinstance(node, ast.BinOp) and isinstance(node.op, ast.BitOr):  # e.g. "Iterator | None"
-                return itertools.chain(worker(node.left), worker(node.right))
-            else:
-                return ("Any",)
-
-        inferred = frozenset(worker(ast.parse(f"x: {hint}").body[0].annotation))
-        return not compatible.isdisjoint(inferred)
 
     @staticmethod
     def is_valid_syntax(value, /, mode="eval"):
@@ -228,19 +197,19 @@ class Violations:
                 bag.add(name)
 
     @classmethod
-    def validate_return(cls, parsed, sign_return_type, func_return_types, is_implemented, /):
+    def validate_return(cls, parsed, sign_return_type, has_returns, is_implemented, /):
         """
         Validate the return sections of the parsed docstring.
 
         :param ParsedDocs parsed: Parsed docstring object.
         :param str | None sign_return_type: Return type from function signature.
-        :param set[str] func_return_types: Set of return types found in the function body.
+        :param set[str] has_returns: True if the function has a return or yield statement.
         :param bool is_implemented:  True if the function is implemented (not just a stub).
 
         :return: Generator yielding violation tuples.
         """
 
-        if parsed.returns and (not func_return_types and is_implemented):
+        if parsed.returns and (not has_returns and is_implemented):
             yield cls.DOC201, ()  # Return documented but implementation has no return
 
         bag = set()
@@ -266,18 +235,6 @@ class Violations:
             # Duplicate return section
             if section_key in bag:
                 yield cls.DOC205, (section_key,)  # Duplicate return section
-
-            is_async_gen = "AsyncGenerator" in func_return_types
-            is_gen = is_async_gen or "Generator" in func_return_types
-            if is_gen:
-                if (
-                    doc_return_type and
-                    cls.is_valid_type_hint(doc_return_type) and
-                    not cls.is_iterator_compatible(doc_return_type, is_async_gen)
-                ):
-                    # Inferred return type Generator is not compatible with the documented return type
-                    yield cls.DOC206, (doc_return_type,)
-
             bag.add(section_key)
 
     @classmethod
@@ -303,7 +260,7 @@ class Violations:
                 yield cls.DOC007, (section_key, first_return.section_key,)
 
     @classmethod
-    def discover_all(cls, parsed, parameters, return_types, is_implemented, /):
+    def discover_all(cls, parsed, parameters, has_returns, is_implemented, /):
         if parsed.code_ini_lineno and parsed.docs_end_lineno and parsed.code_ini_lineno - parsed.docs_end_lineno == 1:
             yield cls.DOC003, ()
         yield from ((cls.DOC001, (section_key,)) for section_key in parsed.invalid)
@@ -311,11 +268,11 @@ class Violations:
         yield from cls.validate_empty_lines(parsed)
         yield from cls.validate_summary(parsed)
         yield from cls.validate_params(parsed, parameters)
-        yield from cls.validate_return(parsed, parameters.get("return"), return_types, is_implemented)
+        yield from cls.validate_return(parsed, parameters.get("return"), has_returns, is_implemented)
         yield from cls.validate_raises(parsed)
 
-    def discover(self, parsed, parameters, return_types, is_implemented, /):
-        for (_, code, msg), ctx in self.discover_all(parsed, parameters, return_types, is_implemented):
+    def discover(self, parsed, parameters, has_returns, is_implemented, /):
+        for (_, code, msg), ctx in self.discover_all(parsed, parameters, has_returns, is_implemented):
             if code in self.valid:
                 self.stats[code] += 1
                 yield ((code, msg), ctx)
@@ -441,25 +398,22 @@ def parse_docs(node, /):
     )
 
 
-def get_func_return_types(node, /):
+def has_return_or_yield(node, /):
     """
-    Returns a set with the return types found in the function body.
+    Returns True if the given AST node (ast.FunctionDef or ast.AsyncFunctionDef)
+    contains a 'return', 'yield', or 'yield from' statement in its main body
+    (excluding nested functions).
 
     :param ast.FunctionDef | ast.AsyncFunctionDef node: Root node to explore.
 
-    :return: Set with return types found (typing.Any, typing.Generator, typing.AsyncGenerator).
-    :rtype: set[str]
+    :return: Whether the function has either "return" or "yield".
+    :rtype: bool
     """
 
     class ReturnYieldVisitor(ast.NodeVisitor):
-        def __init__(self, is_async, /):
-            self.is_async = is_async
-            self.found = set()
+        def __init__(self, /):
+            self.found = False
             self.depth = 0
-
-        @property
-        def generator_type(self):
-            return "AsyncGenerator" if self.is_async else "Generator"
 
         def visit_nested(self, node, /):
             if self.depth == 0:
@@ -474,15 +428,15 @@ def get_func_return_types(node, /):
             self.visit_nested(node)
 
         def visit_Return(self, node, /):
-            self.found.add(self.generator_type if isinstance(node, ast.GeneratorExp) else "Any")
+            self.found = True
 
         def visit_Yield(self, node, /):
-            self.found.add(self.generator_type)
+            self.found = True
 
         def visit_YieldFrom(self, node, /):
-            self.found.add(self.generator_type)
+            self.found = True
 
-    visitor = ReturnYieldVisitor(isinstance(node, ast.AsyncFunctionDef))
+    visitor = ReturnYieldVisitor()
     visitor.visit(node)
     return visitor.found
 
@@ -547,10 +501,10 @@ def checker(node, violations, /):
     params = dict(get_params(node))
     parsed = parse_docs(node)
     lineno = parsed.docs_ini_lineno
-    return_types = get_func_return_types(node)
+    has_returns = has_return_or_yield(node)
     is_implemented = not is_not_implemented(node, rawdocs=parsed.rawdocs)
 
-    for (code, msg), ctx in violations.discover(parsed, params, return_types, is_implemented):
+    for (code, msg), ctx in violations.discover(parsed, params, has_returns, is_implemented):
         yield (lineno, code, msg, ctx)
 
 

@@ -66,6 +66,7 @@ def dummy():
             raises=list(),
             returns=list(),
             invalid=list(),
+            ignored=list(),
             rawdocs=value,
             docs=None,
             docs_ini_lineno=None,
@@ -100,6 +101,7 @@ def dummy():
             raises=list(),
             returns=list(),
             invalid=list(),
+            ignored=list(),
             rawdocs=None,
             docs=None,
             docs_ini_lineno=None,
@@ -212,48 +214,3 @@ def dummy():
         discovered.assert_called_once_with(parsed, parameters, has_returns, is_implemented)
         assert result == expected
 
-
-@pytest.mark.parametrize("is_async", [True, False])
-@pytest.mark.parametrize("hint, sync_expected, async_expected", [
-    ("iterator", False, False),  # respect case
-    ("Iterator", True, False),
-    ("Iterable", True, False),
-    ("AsyncIterator", False, True),
-    ("AsyncIterable", False, True),
-    ("List", False, False),
-    ("Iterator[int]", True, False),
-    ("Iterable[int]", True, False),
-    ("AsyncIterator[int]", False, True),
-    ("AsyncIterable[int]", False, True),
-    ("list[int]", False, False),
-    ("foo.List", False, False),
-    ("foo.Iterator", True, False),
-    ("foo.Iterable", True, False),
-    ("foo.Iterator[int]", True, False),
-    ("foo.AsyncIterable[str]", False, True),
-    ("foo.AsyncIterator[int]", False, True),
-    ("foo.List[str]", False, False),
-    ("Iterator | str | int", True, False),
-    ("Iterable | str | int", True, False),
-    ("AsyncIterator | str | int", False, True),
-    ("AsyncIterable | str | int", False, True),
-    ("list | str | int", False, False),
-    ("Union[Iterator, str, int]", True, False),
-    ("Union[Iterable, str, int]", True, False),
-    ("Union[AsyncIterator, str, int]", False, True),
-    ("Union[AsyncIterable, str, int]", False, True),
-    ("Union[list, str, int]", False, False),
-    ("Optional[Iterator]", True, False),
-    ("Optional[Iterable]", True, False),
-    ("Optional[AsyncIterator]", False, True),
-    ("Optional[AsyncIterable]", False, True),
-    ("Optional[list]", False, False),
-    ("Annotated[Annotated[Iterator, 'metadata1'], 'metadata2']", True, False),
-    ("Annotated[Annotated[Iterable, 'metadata1'], 'metadata2']", True, False),
-    ("Annotated[Annotated[list, 'metadata1'], 'metadata2']", False, False),
-    ("Annotated[Annotated[AsyncIterator, 'metadata1'], 'metadata2']", False, True),
-    ("Annotated[Annotated[AsyncIterable, 'metadata1'], 'metadata2']", False, True),
-])
-def test_is_iterator_compatible_sync(hint, is_async, sync_expected, async_expected):
-    expected = async_expected if is_async else sync_expected
-    assert sphinxlinter.Violations.is_iterator_compatible(hint, is_async) == expected
