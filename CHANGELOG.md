@@ -3,6 +3,7 @@
 - **Added:** Disable SyntaxWarnings to reduce output noise from python parser.
 - **Added:** `DOC008` One-line docstring should end with a period.
 - **Added**: `DOC206` Generator is not compatible with documented return type.
+- **Fixed:** `DOC008` Ignore multi-line docstrings with ignored sections or invalid sections.
 
 ### v0.0.6 (2025-09-25)
 

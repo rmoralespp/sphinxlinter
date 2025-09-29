@@ -171,10 +171,11 @@ def foo(a):
     assert result == expected
 
 
-def test_DOC008_oneline_docstring(violations):
-    content = '''
+@pytest.mark.parametrize("docs", ["Title", "\nTitle"])
+def test_DOC008_oneline_docstring(violations, docs):
+    content = f'''
 def foo(a):
-    """Title"""
+    """{docs}"""
 '''
 
     expected = (
@@ -184,12 +185,16 @@ def foo(a):
     assert result == expected
 
 
-def test_DOC008_mltiline_docstring_no_raise(violations):
-    content = '''
+@pytest.mark.parametrize("docs", [
+    "A multi-line\ndocstring",
+    "A one-line title\n\n:param str a:",
+    "A one-line title\n\n:var: Ignored section",
+])
+def test_DOC008_multiline_docstring_no_raise(violations, docs):
+    content = f'''
 def foo(a):
     """
-    A multi-line
-    docstring
+    {docs}
     """
 '''
 

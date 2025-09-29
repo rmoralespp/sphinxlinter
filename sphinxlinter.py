@@ -62,6 +62,7 @@ class ParsedDocs(typing.NamedTuple):
     returns: list[ParsedDocsReturn]
     raises: list[ParsedDocsRaise]
     invalid: list[str]  # invalid sections
+    ignored: list[str]  # ignored sections
 
     rawdocs: str | None  # Raw docstring
     docs: str | None  # The full docstring
@@ -185,7 +186,7 @@ class Violations:
         if parsed.summary:
             summary_lines = parsed.summary.splitlines()
             br_tail_count = sum(1 for _ in itertools.takewhile(operator.not_, reversed(summary_lines)))
-            has_sections = bool(parsed.params + parsed.returns + parsed.raises)
+            has_sections = bool(parsed.params + parsed.returns + parsed.raises + parsed.invalid + parsed.ignored)
             if br_tail_count == 0 and has_sections:
                 # Only applies if there are sections after the summary
                 yield cls.DOC004, ()  # Missing blank line between summary and sections
@@ -389,6 +390,7 @@ def parse_docs(node, /):
     raises = list()
     returns = list()
     invalid = list()
+    ignored = list()
     rawdocs = ast.get_docstring(node, clean=False)
     docstring = rawdocs if rawdocs is None else inspect.cleandoc(rawdocs)
 
@@ -409,7 +411,9 @@ def parse_docs(node, /):
             raises.append(parse_section_raise(section_key, sep, parts_a, order))
         elif section_key in return_set:
             returns.append(parse_section_return(section_key, sep, parts_a, parts_b, order))
-        elif section_key not in ignore_set:
+        elif section_key in ignore_set:
+            ignored.append(section_key)
+        else:
             invalid.append(section_key)
 
     if docstring:
@@ -433,6 +437,7 @@ def parse_docs(node, /):
         returns=returns,
         raises=raises,
         invalid=invalid,
+        ignored=ignored,
     )
 
 
