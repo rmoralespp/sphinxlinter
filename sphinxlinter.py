@@ -440,8 +440,8 @@ def parse_docs(node, /):
         params=params,
         returns=returns,
         raises=raises,
-        invalid=sorted(invalid),
-        ignored=sorted(ignored),
+        invalid=invalid,
+        ignored=ignored,
     )
 
 

@@ -53,8 +53,8 @@ def foo():
     pass
 '''
     expected = (
-        (3, "DOC001", "Invalid docstring section ({!r})", ("bar",)),
         (3, "DOC001", "Invalid docstring section ({!r})", ("foo",)),
+        (3, "DOC001", "Invalid docstring section ({!r})", ("bar",)),
     )
     result = tuple(sphinxlinter.checker(parse_content(content), violations))
     assert result == expected
