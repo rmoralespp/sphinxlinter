@@ -27,7 +27,20 @@ def foo():
     assert not result
 
 
-def test_DOC001(violations):
+def test_trailing_line_ok(violations):
+    """Checks empty finditer:span."""
+
+    content = '''
+def foo():
+    """Foo.\n"""
+
+    pass
+'''
+    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    assert not result
+
+
+def test_DOC001_function(violations):
     content = '''
 def foo():
     """
@@ -40,8 +53,51 @@ def foo():
     pass
 '''
     expected = (
-        (3, "DOC001", "Unknown docstring section ({!r})", ("foo",)),
-        (3, "DOC001", "Unknown docstring section ({!r})", ("bar",)),
+        (3, "DOC001", "Invalid docstring section ({!r})", ("bar",)),
+        (3, "DOC001", "Invalid docstring section ({!r})", ("foo",)),
+    )
+    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    assert result == expected
+
+
+def test_DOC001_function_duplicated(violations):
+    content = '''
+def foo():
+    """
+    Title.
+
+    :foo:
+    :foo:
+    """
+
+    pass
+'''
+    expected = (
+        (3, "DOC001", "Invalid docstring section ({!r})", ("foo",)),
+    )
+    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    assert result == expected
+
+
+def test_DOC001_class(violations):
+    content = '''
+class Foo:
+    """
+    Title.
+
+    :param str a: description
+    :param int b: description
+    :raises ValueError: description
+    :return: description
+    :rtype: int
+    """
+
+'''
+    expected = (
+        (3, 'DOC001', 'Invalid docstring section ({!r})', ('param',)),  # twice, but only once reported
+        (3, 'DOC001', 'Invalid docstring section ({!r})', ('raises',)),
+        (3, 'DOC001', 'Invalid docstring section ({!r})', ('return',)),
+        (3, 'DOC001', 'Invalid docstring section ({!r})', ('rtype',))
     )
     result = tuple(sphinxlinter.checker(parse_content(content), violations))
     assert result == expected

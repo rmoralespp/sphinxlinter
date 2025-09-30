@@ -1,5 +1,8 @@
 ## Releases
 
+- **Added:** Support for Module and Class docstring checks.
+- **Fixed:** `DOC006` false positive.
+
 ### v0.0.8 (2025-09-30)
 
 - **Added:** More unit tests.

@@ -61,6 +61,7 @@ def dummy():
     def test_validate_empty_lines(self, value):
         # Test condition when there is no docstring (or empty)
         parsed = sphinxlinter.ParsedDocs(
+            kind="function",
             summary=None,
             params=list(),
             raises=list(),
@@ -96,6 +97,7 @@ def dummy():
 '''
         # Test empty docstring does not return sections
         expected = sphinxlinter.ParsedDocs(
+            kind="function",
             summary=None,
             params=list(),
             raises=list(),
@@ -127,11 +129,23 @@ def dummy():
         data = object()
         filename = object()
         guard = object()
+        module = ast.Module()
+        functiondef = ast.FunctionDef("foo", tuple())
+        asyncfunctiondef = ast.AsyncFunctionDef("bar", tuple())
+        classdef = ast.ClassDef("zas", tuple())
         expected = (
-            ast.FunctionDef("foo", tuple()),
-            ast.AsyncFunctionDef("bar", tuple()),
+            module,
+            functiondef,
+            asyncfunctiondef,
+            classdef,
         )
-        walk = (ast.Module(), ast.Return()) + expected
+        walk = (
+            module,
+            ast.Return(),
+            functiondef,
+            asyncfunctiondef,
+            classdef,
+        )
         with (
             unittest.mock.patch("sphinxlinter.ast.parse", return_value=guard) as parser,
             unittest.mock.patch("sphinxlinter.ast.walk", return_value=walk) as walker,

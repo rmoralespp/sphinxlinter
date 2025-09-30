@@ -35,6 +35,12 @@ quotes_starts_regex = re.compile(r'^"+\s*$')
 quotes_ends_regex = re.compile(r'^\s*"+$')
 
 
+class NodeTypes:
+    FUNCTION = "function"
+    CLASS = "class"
+    MODULE = "module"
+
+
 class ParsedDocsParam(typing.NamedTuple):
     section_key: str
     sep: bool  # True if ':' was present
@@ -60,15 +66,16 @@ class ParsedDocsRaise(typing.NamedTuple):
 
 
 class ParsedDocs(typing.NamedTuple):
+    kind: str  # NodeTypes.*
     summary: str | None  # The summary section (before the first section)
     params: list[ParsedDocsParam]
     returns: list[ParsedDocsReturn]
     raises: list[ParsedDocsRaise]
-    invalid: list[str]  # invalid sections
-    ignored: list[str]  # ignored sections
+    invalid: list[str]  # invalid section keys
+    ignored: list[str]  # ignored section keys
 
     rawdocs: str | None  # Raw docstring
-    docs: str | None  # The full docstring
+    docs: str | None  # Cleaned docstring (inspect.cleandoc)
     docs_ini_lineno: int | None  # First line number of the docstring, None if no docstring
     docs_end_lineno: int | None  # End line number of the docstring, None if no docstring
     code_ini_lineno: int | None  # First line number of the code block after the docstring, None if no code
@@ -79,7 +86,7 @@ class Violations:
     #   Enabled, Code, Message
 
     # DOC0xx: Docstring section issues
-    DOC001 = (True, "DOC001", "Unknown docstring section ({!r})")
+    DOC001 = (True, "DOC001", "Invalid docstring section ({!r})")
     DOC002 = (True, "DOC002", "Malformed section ({!r})")
     DOC003 = (True, "DOC003", "Missing blank line after docstring")
     DOC004 = (True, "DOC004", "Missing blank line between summary and sections")
@@ -154,7 +161,10 @@ class Violations:
             hits = trailing_regex.finditer(text)
             present = next(filter(None, hits), None)
             if present:
-                yield cls.DOC006, ()
+                left, right = present.span()
+                if left != right:
+                    # finditer: Empty matches are included in the result.
+                    yield cls.DOC006, ()
 
     @classmethod
     def validate_head_tail_quotes(cls, parsed, /):
@@ -284,9 +294,11 @@ class Violations:
         yield from cls.validate_empty_lines(parsed)
         yield from cls.validate_head_tail_quotes(parsed)
         yield from cls.validate_summary(parsed)
-        yield from cls.validate_params(parsed, parameters)
-        yield from cls.validate_return(parsed, parameters.get("return"), has_returns, is_implemented)
-        yield from cls.validate_raises(parsed)
+
+        if parsed.kind == NodeTypes.FUNCTION:  # Only functions have parameters, returns, and raises
+            yield from cls.validate_params(parsed, parameters)
+            yield from cls.validate_return(parsed, parameters.get("return"), has_returns, is_implemented)
+            yield from cls.validate_raises(parsed)
 
     def discover(self, parsed, parameters, has_returns, is_implemented, /):
         for (_, code, msg), ctx in self.discover_all(parsed, parameters, has_returns, is_implemented):
@@ -359,39 +371,56 @@ def get_summary(docstring, /):
         return None
 
 
+def get_node_type(node, /):
+    if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+        kind = NodeTypes.FUNCTION
+    elif isinstance(node, ast.ClassDef):
+        kind = NodeTypes.CLASS
+    elif isinstance(node, ast.Module):
+        kind = NodeTypes.MODULE
+    else:
+        raise ValueError
+    return kind
+
+
 def parse_docs(node, /):
     params = list()
     raises = list()
     returns = list()
+
+    # Does not use 'set' to preserve the order of appearance
     invalid = list()
     ignored = list()
-    rawdocs = ast.get_docstring(node, clean=False)
-    docstring = rawdocs if rawdocs is None else inspect.cleandoc(rawdocs)
 
-    for order, section in enumerate(itersections(docstring)):
+    rawdocs = ast.get_docstring(node, clean=False)
+    docs = rawdocs if rawdocs is None else inspect.cleandoc(rawdocs)
+
+    kind = get_node_type(node)
+    is_func = kind == NodeTypes.FUNCTION
+    for order, section in enumerate(itersections(docs)):
         a, sep, b = section.lstrip(":").partition(":")
         sep = bool(sep)  # True if ':' was present
         b = b.splitlines()[0].strip() if (b := b.strip()) else ""  # Only first line of description is relevant.
         parts_a = a.split()
         parts_b = b.split()
         section_key = parts_a[0].lower()
-        if section_key in param_set:
+        if is_func and section_key in param_set:
             params.append(parse_section_param(section_key, sep, parts_a, order))
-        elif section_key == ptype_key:
+        elif is_func and section_key == ptype_key:
             params.append(parse_section_type(section_key, sep, parts_a, parts_b, order))
-        elif section_key in rtype_key:
+        elif is_func and section_key in rtype_key:
             returns.append(parse_section_rtype(section_key, sep, parts_a, parts_b, order))
-        elif section_key in raises_set:
+        elif is_func and section_key in raises_set:
             raises.append(parse_section_raise(section_key, sep, parts_a, order))
-        elif section_key in return_set:
+        elif is_func and section_key in return_set:
             returns.append(parse_section_return(section_key, sep, parts_a, parts_b, order))
-        elif section_key in ignore_set:
+        elif section_key in ignore_set and section_key not in ignored:
             ignored.append(section_key)
-        else:
+        elif section_key not in invalid:
             invalid.append(section_key)
 
-    if docstring:
-        summary = get_summary(docstring)
+    if docs:
+        summary = get_summary(docs)
         first = node.body[0]
         docs_ini_lineno, docs_end_lineno = (first.lineno, first.end_lineno)
         code_ini_lineno = node.body[1].lineno if len(node.body) > 1 else None
@@ -401,17 +430,18 @@ def parse_docs(node, /):
         code_ini_lineno = node.body[0].lineno if node.body else None
 
     return ParsedDocs(
+        kind=kind,
         summary=summary,
         rawdocs=rawdocs,
-        docs=docstring,
+        docs=docs,
         docs_ini_lineno=docs_ini_lineno,
         docs_end_lineno=docs_end_lineno,
         code_ini_lineno=code_ini_lineno,
         params=params,
         returns=returns,
         raises=raises,
-        invalid=invalid,
-        ignored=ignored,
+        invalid=sorted(invalid),
+        ignored=sorted(ignored),
     )
 
 
@@ -504,24 +534,28 @@ def is_not_implemented(node, /, rawdocs=None):
 
 def checker(node, violations, /):
     """
-    Returns True if the given AST node (ast.FunctionDef or ast.AsyncFunctionDef)
-    contains a 'return', 'yield', or 'yield from' statement in its main body
-    (excluding nested functions).
+    Explore the given AST node and yield each violation found.
 
-    :param ast.FunctionDef | ast.AsyncFunctionDef node: Root node to explore.
+    :param ast.AST node: Root node to explore.
     :param Violations violations: Violations instance with enabled/disabled rules.
 
     :return: Generator with data of each violation.
     :rtype: typing.Iterator[tuple[int, str, dict]]
     """
 
-    params = dict(get_params(node))
     parsed = parse_docs(node)
     lineno = parsed.docs_ini_lineno
-    has_returns = has_return_or_yield(node)
-    is_implemented = not is_not_implemented(node, rawdocs=parsed.rawdocs)
 
-    for (code, msg), ctx in violations.discover(parsed, params, has_returns, is_implemented):
+    if parsed.kind == "function":
+        func_params = dict(get_params(node))
+        func_has_returns = has_return_or_yield(node)
+        func_is_implemented = not is_not_implemented(node, rawdocs=parsed.rawdocs)
+    else:  # ClassDef or Module
+        func_params = dict()
+        func_has_returns = False
+        func_is_implemented = False
+
+    for (code, msg), ctx in violations.discover(parsed, func_params, func_has_returns, func_is_implemented):
         yield (lineno, code, msg, ctx)
 
 
@@ -553,7 +587,7 @@ def walk_module(quiet, data, filename, /):
     :param str filename: File name to use when printing messages.
 
     :return: Each root node of every function/method.
-    :rtype: Iterator[ast.FunctionDef | ast.AsyncFunctionDef]
+    :rtype: Iterator[ast.AST]
     """
 
     try:
@@ -562,7 +596,7 @@ def walk_module(quiet, data, filename, /):
         if not quiet:
             logging.warning("%s: %s", filename, e)
     else:
-        klasses = (ast.FunctionDef, ast.AsyncFunctionDef)
+        klasses = (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef, ast.Module)
         for node in ast.walk(tree):
             if isinstance(node, klasses):
                 yield node

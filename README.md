@@ -118,7 +118,7 @@ Common violation codes:
 
 How it works (brief)
 
-- Parses Python AST to find `FunctionDef` members.
+- Parses Python AST to find `FunctionDef`, `AsyncFunctionDef`, `ClassDef`, and `Module` nodes.
 - Extracts signatures and docstring
   sections [Sphinx field lists](https://www.sphinx-doc.org/en/master/usage/domains/python.html#info-field-lists).
 - Validates section presence, syntax and consistency with type annotations.
@@ -152,7 +152,7 @@ which enforces a trailing period on the first line of both one-line and multi-li
 **DOC008** only enforces a trailing period on *one-line* docstrings, following the recommendation
 in [PEP 257](https://peps.python.org/pep-0257/#one-line-docstrings).
 
-**DOC009**: Unlike Ruff D300 [triple-single-quotes](https://docs.astral.sh/ruff/rules/triple-single-quotes/#triple-single-quotes-d300),
+**DOC009**: Unlike Ruff [`triple-single-quotes`](https://docs.astral.sh/ruff/rules/triple-single-quotes/#triple-single-quotes-d300),
 this rule only checks that multi-line docstrings do not start or end with more than three double quotes.
 
 ### DOC1xx: Parameter issues
