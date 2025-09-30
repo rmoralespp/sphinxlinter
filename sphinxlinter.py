@@ -661,6 +661,9 @@ def main():
     if args.statistics and violations.stats:
         dump_statistics(violations)
 
+    if not violations.stats:
+        print("All checks passed!")
+
     return 0 if not violations.stats else 1
 
 

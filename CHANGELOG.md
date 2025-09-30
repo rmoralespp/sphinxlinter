@@ -2,6 +2,7 @@
 
 - **Added:** More unit tests.
 - **Added:** `spxl` short command to run the linter from CLI.
+- **Added:** Print success message if no issues found.
 - **Changed:** `DOC009` message to avoid confusion with **ruff's D300** rule
 - **Changed:** `pyproject.toml` to use more ruff rules
 - **Fixed:** Fix format warnings.
