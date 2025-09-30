@@ -6,6 +6,7 @@
 - **Changed:** `DOC009` message to avoid confusion with **ruff's D300** rule
 - **Changed:** `pyproject.toml` to use more ruff rules
 - **Fixed:** Fix format warnings.
+- **Fixed:** Ignore `DOC008` when docstring is empty.
 
 - **Added:** Disable SyntaxWarnings to reduce output noise from python parser.
 - **Added:** `DOC008` One-line docstring should end with a period.

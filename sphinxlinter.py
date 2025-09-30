@@ -174,8 +174,10 @@ class Violations:
                 # Only applies if there are sections after the summary
                 yield cls.DOC004, ()  # Missing blank line between summary and sections
 
-            if not has_sections and len(summary_lines) == 1 and not summary_lines[0].rstrip().endswith('.'):
-                yield cls.DOC008, ()  # Summary should end with a period
+            if not has_sections and len(summary_lines) == 1:
+                line = summary_lines[0].rstrip()
+                if line and not line.endswith('.'):
+                    yield cls.DOC008, ()  # Summary should end with a period
 
     @classmethod
     def validate_params(cls, parsed, parameters, /):
@@ -485,9 +487,9 @@ def is_not_implemented(node, /, rawdocs=None):
             exc = stmt.exc
             error_name = NotImplementedError.__name__
             if (
-                    isinstance(exc, ast.Call)
-                    and isinstance(exc.func, ast.Name)
-                    and exc.func.id == error_name
+                isinstance(exc, ast.Call)
+                and isinstance(exc.func, ast.Name)
+                and exc.func.id == error_name
             ):
                 return True
 
@@ -661,7 +663,7 @@ def main():
     if args.statistics and violations.stats:
         dump_statistics(violations)
 
-    if not violations.stats:
+    if not args.quiet and not violations.stats:
         print("All checks passed!")
 
     return 0 if not violations.stats else 1

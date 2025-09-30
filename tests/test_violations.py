@@ -182,6 +182,21 @@ def foo(a):
     assert result == expected
 
 
+def test_DOC006_empty_line(violations):
+    content = '''
+def foo():
+    """
+    """
+
+    pass
+'''
+    expected = (
+        (3, "DOC006", "Trailing empty lines", ()),
+    )
+    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    assert result == expected
+
+
 @pytest.mark.parametrize("docs", ["Title", "\nTitle"])
 def test_DOC008_oneline_docstring(violations, docs):
     content = f'''
