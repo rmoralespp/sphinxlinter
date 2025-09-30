@@ -30,7 +30,7 @@ section_regex = re.compile(r'(^:.*?)(?=^:|\Z)', flags=re.DOTALL | re.MULTILINE)
 trailing_regex = re.compile("(?:^\\s*$){2,}\\Z", flags=re.MULTILINE)
 # Consecutive empty lines (not at end)
 empty_lines_regex = re.compile("(?:^[ \t]*\r?\n){2,}(?=[^\r\n])", re.MULTILINE)
-# Docstring starting or ending with only quotes lines
+
 quotes_starts_regex = re.compile(r'^"+\s*$')
 quotes_ends_regex = re.compile(r'^\s*"+$')
 
@@ -89,7 +89,9 @@ class Violations:
     # Ruff (missing-trailing-period) → enforces a trailing period on all docstring summaries (one-line and multi-line).
     # Rule (DOC008) → only enforces a trailing period on one-line docstrings, as recommended by PEP257.
     DOC008 = (True, "DOC008", "One-line docstring should end with a period")
-    DOC009 = (True, "DOC009", 'Docstring should use """triple double quotes"""')
+    # Unlike Ruff D300 (triple-single-quotes),
+    # this rule only checks that multi-line docstrings do not start or end with more than three double quotes.
+    DOC009 = (True, "DOC009", "Docstring must not use more than 3 double quotes")
 
     # DOC1xx: Parameter issues
     DOC101 = (True, "DOC101", "Parameter documented but not in signature ({!r})")
@@ -620,7 +622,6 @@ def main():
         default=False,
         help="show counts for every rule with at least one violation",
     )
-    # TODO: Reduce noise, python might dump some warnings to stderr (SyntaxWarning).
     parser.add_argument(
         "--quiet",
         action="store_const",

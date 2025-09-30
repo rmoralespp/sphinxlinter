@@ -124,17 +124,17 @@ Notes
 
 ### DOC0xx: Docstring section issues
 
-| Code   | Description                                     | Justification                                                                |
-|--------|-------------------------------------------------|------------------------------------------------------------------------------|
-| DOC001 | Unknown docstring section                       | Detects sections not recognized by Sphinx conventions.                       |
-| DOC002 | Malformed section                               | Ensures sections follow correct Sphinx formatting.                           |
-| DOC003 | Missing blank line after docstring              | Improves readability and separates docstrings from code.                     |
-| DOC004 | Missing blank line between summary and sections | Maintains clarity and standard docstring structure.                          |
-| DOC005 | Too many consecutive empty lines                | Avoids unnecessary whitespace, keeping docstrings clean.                     |
-| DOC006 | Trailing empty lines                            | Ensures docstrings do not contain superfluous blank lines.                   |
-| DOC007 | Misplaced section                               | Ensures docstrings sections are correctly located.                           |
-| DOC008 | One-line docstring should end with a period     | Enforces a trailing period on one-line docstrings, as recommended by PEP257. | 
-| DOC009 | Docstring should use """triple double quotes""" | Prevents confusion with docstring delimiters                                 |
+| Code   | Description                                       | Justification                                                                |
+|--------|---------------------------------------------------|------------------------------------------------------------------------------|
+| DOC001 | Unknown docstring section                         | Detects sections not recognized by Sphinx conventions.                       |
+| DOC002 | Malformed section                                 | Ensures sections follow correct Sphinx formatting.                           |
+| DOC003 | Missing blank line after docstring                | Improves readability and separates docstrings from code.                     |
+| DOC004 | Missing blank line between summary and sections   | Maintains clarity and standard docstring structure.                          |
+| DOC005 | Too many consecutive empty lines                  | Avoids unnecessary whitespace, keeping docstrings clean.                     |
+| DOC006 | Trailing empty lines                              | Ensures docstrings do not contain superfluous blank lines.                   |
+| DOC007 | Misplaced section                                 | Ensures docstrings sections are correctly located.                           |
+| DOC008 | One-line docstring should end with a period       | Enforces a trailing period on one-line docstrings, as recommended by PEP257. | 
+| DOC009 | Docstring must not use more than 3 double quotes  | Encourages the use of triple quotes for docstrings.                          |
 
 **NOTES**:
 
@@ -143,6 +143,9 @@ Notes
 which enforces a trailing period on the first line of both one-line and multi-line docstrings. By contrast, the rule
 **DOC008** only enforces a trailing period on *one-line* docstrings, following the recommendation
 in [PEP 257](https://peps.python.org/pep-0257/#one-line-docstrings).
+
+**DOC009**: Unlike Ruff D300 [triple-single-quotes](https://docs.astral.sh/ruff/rules/triple-single-quotes/#triple-single-quotes-d300),
+this rule only checks that multi-line docstrings do not start or end with more than three double quotes.
 
 ### DOC1xx: Parameter issues
 

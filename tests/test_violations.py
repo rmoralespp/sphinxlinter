@@ -16,6 +16,17 @@ def violations():
     return sphinxlinter.Violations()
 
 
+def test_empty(violations):
+    content = '''
+def foo():
+    """"""
+
+    pass
+'''
+    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    assert not result
+
+
 def test_DOC001(violations):
     content = '''
 def foo():
@@ -215,7 +226,7 @@ def foo():
     pass
 '''
 
-    expected = ((3, 'DOC009', 'Docstring should use """triple double quotes"""', ()),)
+    expected = ((3, 'DOC009', 'Docstring must not use more than 3 double quotes', ()),)
 
     result = tuple(sphinxlinter.checker(parse_content(content), violations))
     assert result == expected
@@ -235,8 +246,6 @@ def foo():
     expected = ()
     result = tuple(sphinxlinter.checker(parse_content(content), violations))
     assert result == expected
-
-
 
 
 def test_DOC101(violations):

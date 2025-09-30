@@ -213,4 +213,3 @@ def dummy():
 
         discovered.assert_called_once_with(parsed, parameters, has_returns, is_implemented)
         assert result == expected
-
