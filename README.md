@@ -66,13 +66,21 @@ pip install sphinx-linter
 Run on current working directory
 
 ```bash
-sphinxlinter
+sphinxlinter .
 ```
+
+*Or using the short command:*
+
+```bash
+spxl .
+```
+
+```bash
 
 Run on specific files or directories
 
 ```bash
-sphinxlinter path/to/file_or_dir ...
+spxl path/to/file_or_dir ...
 ```
 
 ## Arguments and Options

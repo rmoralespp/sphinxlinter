@@ -148,3 +148,4 @@ ignore = [
 
 [project.scripts]
 sphinxlinter = "sphinxlinter:main"
+spxl = "sphinxlinter:main"  # Alias for convenience
