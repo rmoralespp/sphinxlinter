@@ -62,9 +62,10 @@ select = [
     "D209", # Multi-line docstring closing quotes should be on a separate line
     "D210", # No whitespaces allowed surrounding docstring text
     "D211", # No blank lines allowed before class docstring
+    "D300", # Use """triple double quotes"""
+    "D402",  # First line should not be the function's signature
     "D403", # First word of the first line should be properly capitalized
     "D419", # Docstring is empty
-    "D300", # Use """triple double quotes"""
 
     # pyupgrade
     "UP003", # Use str instead of type(...)
