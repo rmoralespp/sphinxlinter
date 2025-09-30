@@ -1,5 +1,7 @@
 ## Releases
 
+### v0.0.8 (2025-09-30)
+
 - **Added:** More unit tests.
 - **Added:** `spxl` short command to run the linter from CLI.
 - **Added:** Print success message if no issues found.
@@ -7,6 +9,8 @@
 - **Changed:** `pyproject.toml` to use more ruff rules
 - **Fixed:** Fix format warnings.
 - **Fixed:** Ignore `DOC008` when docstring is empty.
+
+### v0.0.7 (2025-09-29)
 
 - **Added:** Disable SyntaxWarnings to reduce output noise from python parser.
 - **Added:** `DOC008` One-line docstring should end with a period.
