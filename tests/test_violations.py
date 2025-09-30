@@ -97,7 +97,7 @@ class Foo:
         (3, 'DOC001', 'Invalid docstring section ({!r})', ('param',)),  # twice, but only once reported
         (3, 'DOC001', 'Invalid docstring section ({!r})', ('raises',)),
         (3, 'DOC001', 'Invalid docstring section ({!r})', ('return',)),
-        (3, 'DOC001', 'Invalid docstring section ({!r})', ('rtype',))
+        (3, 'DOC001', 'Invalid docstring section ({!r})', ('rtype',)),
     )
     result = tuple(sphinxlinter.checker(parse_content(content), violations))
     assert result == expected
