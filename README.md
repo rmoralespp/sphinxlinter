@@ -157,6 +157,7 @@ Common violation codes:
 - `DOC1xx`: Parameter issues
 - `DOC2xx`: Return issues
 - `DOC3xx`: Raises issues
+- `DOC4xx`: Variable issues
 
 How it works (brief)
 
