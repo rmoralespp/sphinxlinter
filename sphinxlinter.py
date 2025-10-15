@@ -414,8 +414,9 @@ def parse_docs(node, /):
             raises.append(parse_section_raise(section_key, sep, parts_a, order))
         elif is_func and section_key in return_set:
             returns.append(parse_section_return(section_key, sep, parts_a, parts_b, order))
-        elif section_key in ignore_set and section_key not in ignored:
-            ignored.append(section_key)
+        elif section_key in ignore_set:
+            if section_key not in ignored:
+                ignored.append(section_key)
         elif section_key not in invalid:
             invalid.append(section_key)
 
