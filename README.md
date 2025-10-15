@@ -16,11 +16,26 @@ implementation—not covered
 by [pydocstyle](https://www.pydocstyle.org/en/stable/error_codes.html), [pydoclint](https://jsh9.github.io/pydoclint/violation_codes.html),
 or [ruff](https://docs.astral.sh/ruff/rules/).
 
+
+**About Variable fields**
+
+Although **Sphinx** does not currently explain this distinction, its syntax was directly inherited from
+[Epydoc](https://epydoc.sourceforge.net/manual-fields.html#variables), 
+so it is generally understood that:
+
+- **var**: instance variable
+- **cvar**: class variable
+- **var**: variable (global or module-level variable)
+
 In general, a typical Sphinx docstring has the following
 format ([ref](https://sphinx-rtd-tutorial.readthedocs.io/en/latest/docstrings.html)):
 
+
+**For functions/methods:**
+
 ```
-"""[Summary]
+"""
+[Summary]
 
 :param [ParamType] [ParamName]: [ParamDescription]
 :type [ParamName]: [ParamType] 
@@ -31,6 +46,33 @@ format ([ref](https://sphinx-rtd-tutorial.readthedocs.io/en/latest/docstrings.ht
 :rtype: [ReturnType]
 """
 ```
+
+**For Classes:**
+
+```
+"""
+[Summary]
+
+:ivar [InstanceVarName]: [VarDescription]
+:cvar [ClassVarName]: [VarDescription]
+:vartype [InstanceVarName]: [VarType]
+:vartype [ClassVarName]: [VarType]
+...
+"""
+```
+
+**For Modules:**
+
+```
+"""
+[Summary]
+
+:var [ModuleVarName]: [VarDescription]
+:vartype [InstanceVarName]: [VarType]
+...
+"""
+```
+
 
 Requirements
 
@@ -181,6 +223,15 @@ this rule only checks that multi-line docstrings do not start or end with more t
 |--------|-------------------------------|-----------------------------------------------------|
 | DOC302 | Invalid exception type syntax | Ensures exceptions conform to valid Python syntax.  |
 | DOC305 | Duplicated exception type     | Prevents repetition of exceptions in the docstring. |
+
+
+### DOC4xx: Variable issues
+
+| Code   | Description                    | Justification                                                    |
+|--------|--------------------------------|------------------------------------------------------------------|
+| DOC402 | Invalid variable type syntax   | Ensures variable types conform to valid Python type hint syntax. |
+| DOC403 | Variable name with spaces      | Variable names should not contain spaces.                        |
+| DOC405 | Duplicated variable            | Prevents repetition of variables in the docstring.               |
 
 ## Development
 

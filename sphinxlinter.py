@@ -20,7 +20,17 @@ rtype_key = "rtype"
 param_set = {"param", "parameter", "arg", "argument", "keyword", "key"}
 return_set = {"return", "returns"}
 raises_set = {"raises", "raise", "except", "exception"}
-ignore_set = {"var", "ivar", "cvar", "vartype", "meta"}  # At this moment, it's ignored
+
+# Although Sphinx does not currently explain this distinction, its syntax was directly inherited from
+# Epydoc (https://epydoc.sourceforge.net/manual-fields.html#variables),
+# so it is generally understood that:
+# - "ivar": instance variable
+# - "cvar": class variable
+# - "var": variable (global or module-level variable)
+class_var_set = {"ivar", "cvar"}
+module_var_key = "var"
+vtype_key = "vartype"
+ignore_set = {"meta"}  # At this moment, it's ignored
 
 # Summary (everything before the first section or the end of the string)
 summary_regex = re.compile(r'^(.*?)(?=^:|\Z)', flags=re.DOTALL | re.MULTILINE)
@@ -49,6 +59,16 @@ class ParsedDocsParam(typing.NamedTuple):
     order: int  # Order of appearance in the docstring
 
 
+class ParsedDocsVar(typing.NamedTuple):
+    section_key: str
+    sep: bool  # True if ':' was present
+    var_name: str | None
+    var_type: str | None  # Only for ´:vartype:´
+    with_spaces: bool  # (True if var_name has spaces)
+    description: str | None  # Only for ´:var:´, ´:ivar:´, ´:cvar:´
+    order: int  # Order of appearance in the docstring
+
+
 class ParsedDocsReturn(typing.NamedTuple):
     section_key: str
     sep: bool  # True if ':' was present
@@ -71,6 +91,7 @@ class ParsedDocs(typing.NamedTuple):
     params: list[ParsedDocsParam]
     returns: list[ParsedDocsReturn]
     raises: list[ParsedDocsRaise]
+    variables: list[ParsedDocsVar]
     invalid: list[str]  # invalid section keys
     ignored: list[str]  # ignored section keys
 
@@ -117,6 +138,11 @@ class Violations:
     # DOC3xx: Raises issues
     DOC302 = (True, "DOC302", "Invalid exception type syntax ({!r})")
     DOC305 = (True, "DOC305", "Duplicated exception type ({!r})")
+
+    # DOC4xx: Variable issues
+    DOC402 = (True, "DOC402", "Invalid variable type syntax ({!r})")
+    DOC403 = (True, "DOC403", "Variable name with spaces ({!r})")
+    DOC405 = (True, "DOC405", "Duplicated variable ({!r})")
 
     _get_order = operator.attrgetter("order")
 
@@ -286,6 +312,26 @@ class Violations:
                 yield cls.DOC007, (section_key, first_return.section_key,)
 
     @classmethod
+    def validate_variables(cls, parsed, /):
+        bag = set()
+        for var in parsed.variables:
+            section_key, sep, name, kind, with_spaces, description, order = var
+
+            # Malformed var: missing ':' or missing name/type when required
+            if not (sep and name) or (section_key == vtype_key and not kind) or section_key in class_var_set and not description:
+                yield cls.DOC002, (section_key,)
+
+            if kind and not cls.is_valid_type_hint(kind):  # Invalid type syntax
+                yield cls.DOC402, (kind,)
+            if with_spaces:  # Variable name with spaces
+                yield cls.DOC403, (name,)
+            if name and (section_key, name) in bag:  # Duplicated variable in the same section
+                yield cls.DOC405, (name,)
+
+            if name:
+                bag.add((section_key, name))
+
+    @classmethod
     def discover_all(cls, parsed, parameters, has_returns, is_implemented, /):
         if parsed.code_ini_lineno and parsed.docs_end_lineno and parsed.code_ini_lineno - parsed.docs_end_lineno == 1:
             yield cls.DOC003, ()
@@ -299,6 +345,9 @@ class Violations:
             yield from cls.validate_params(parsed, parameters)
             yield from cls.validate_return(parsed, parameters.get("return"), has_returns, is_implemented)
             yield from cls.validate_raises(parsed)
+
+        if parsed.kind in (NodeTypes.CLASS, NodeTypes.MODULE):  # Only classes and modules have variables
+            yield from cls.validate_variables(parsed)
 
     def discover(self, parsed, parameters, has_returns, is_implemented, /):
         for (_, code, msg), ctx in self.discover_all(parsed, parameters, has_returns, is_implemented):
@@ -331,6 +380,34 @@ def parse_section_type(section_key, sep, parts_a, parts_b, order, /):
     else:  # ´:type [ParamName]:´ (without type)
         param_type = None
     return ParsedDocsParam(section_key, sep, param_name, param_type, order)
+
+
+def fetch_var_name(parts_a, /):
+    if len(parts_a) == 1:
+        var_name = None
+    else:
+        var_name = " ".join(parts_a[1:])
+    with_spaces = len(parts_a) > 2
+    return (var_name, with_spaces)
+
+
+def parse_section_var(section_key, sep, parts_a, parts_b, order, /):
+    var_type = None
+    var_name, with_spaces = fetch_var_name(parts_a)
+    if parts_b:  # ´:var [VarName]: [Description]´
+        description = " ".join(parts_b)
+    else:  # ´:var [VarName]:´ (without description)
+        description = None
+    return ParsedDocsVar(section_key, sep, var_name, var_type, with_spaces, description, order)
+
+
+def parse_section_vtype(section_key, sep, parts_a, parts_b, order, /):
+    var_name, with_spaces = fetch_var_name(parts_a)
+    if parts_b:  # ´:vtype [VarName]: [VarType]´
+        var_type = " ".join(parts_b)
+    else:  # ´:vtype [VarName]:´ (without type)
+        var_type = None
+    return ParsedDocsVar(section_key, sep, var_name, var_type, with_spaces, None, order)
 
 
 def parse_section_rtype(section_key, sep, parts_a, parts_b, order, /):
@@ -387,6 +464,7 @@ def parse_docs(node, /):
     params = list()
     raises = list()
     returns = list()
+    variables = list()
 
     # Does not use 'set' to preserve the order of appearance
     invalid = list()
@@ -397,6 +475,8 @@ def parse_docs(node, /):
 
     kind = get_node_type(node)
     is_func = kind == NodeTypes.FUNCTION
+    is_class = kind == NodeTypes.CLASS
+    is_module = kind == NodeTypes.MODULE
     for order, section in enumerate(itersections(docs)):
         a, sep, b = section.lstrip(":").partition(":")
         sep = bool(sep)  # True if ':' was present
@@ -414,6 +494,10 @@ def parse_docs(node, /):
             raises.append(parse_section_raise(section_key, sep, parts_a, order))
         elif is_func and section_key in return_set:
             returns.append(parse_section_return(section_key, sep, parts_a, parts_b, order))
+        elif (is_class and section_key in class_var_set) or (is_module and section_key == module_var_key):
+            variables.append(parse_section_var(section_key, sep, parts_a, parts_b, order))
+        elif (is_class or is_module) and section_key == vtype_key:
+            variables.append(parse_section_vtype(section_key, sep, parts_a, parts_b, order))
         elif section_key in ignore_set:
             if section_key not in ignored:
                 ignored.append(section_key)
@@ -441,6 +525,7 @@ def parse_docs(node, /):
         params=params,
         returns=returns,
         raises=raises,
+        variables=variables,
         invalid=invalid,
         ignored=ignored,
     )

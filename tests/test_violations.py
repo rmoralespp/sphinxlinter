@@ -48,6 +48,10 @@ def foo():
 
     :foo:
     :bar:
+    :var foo: description
+    :ivar bar: description
+    :cvar baz: description
+    :vartype qux: int
     """
 
     pass
@@ -55,6 +59,10 @@ def foo():
     expected = (
         (3, "DOC001", "Invalid docstring section ({!r})", ("foo",)),
         (3, "DOC001", "Invalid docstring section ({!r})", ("bar",)),
+        (3, 'DOC001', 'Invalid docstring section ({!r})', ('var',)),
+        (3, 'DOC001', 'Invalid docstring section ({!r})', ('ivar',)),
+        (3, 'DOC001', 'Invalid docstring section ({!r})', ('cvar',)),
+        (3, 'DOC001', 'Invalid docstring section ({!r})', ('vartype',))
     )
     result = tuple(sphinxlinter.checker(parse_content(content), violations))
     assert result == expected
@@ -90,6 +98,7 @@ class Foo:
     :raises ValueError: description
     :return: description
     :rtype: int
+    :var foo: description
     """
 
 '''
@@ -98,6 +107,7 @@ class Foo:
         (3, 'DOC001', 'Invalid docstring section ({!r})', ('raises',)),
         (3, 'DOC001', 'Invalid docstring section ({!r})', ('return',)),
         (3, 'DOC001', 'Invalid docstring section ({!r})', ('rtype',)),
+        (3, 'DOC001', 'Invalid docstring section ({!r})', ('var',)),
     )
     result = tuple(sphinxlinter.checker(parse_content(content), violations))
     assert result == expected
@@ -148,7 +158,7 @@ def foo():
     ("raises", ":raises:",),  # missing exception
     ("raises", ":raises: ",),  # missing exception (only spaces)
 ])
-def test_DOC002(section, value, violations):
+def test_DOC002_function(section, value, violations):
     content = f'''
 def foo(a):
     """
@@ -158,6 +168,43 @@ def foo(a):
     """
 
     return a
+'''
+    expected = (
+        (3, "DOC002", "Malformed section ({!r})", (section,)),
+    )
+    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    assert result == expected
+
+
+@pytest.mark.parametrize("section, value", [
+    # missing separator ":" at the end
+    ("ivar", ":ivar a",),
+    ("cvar", ":cvar a",),
+    # missing variable without name and description
+    ("ivar", ":ivar:",),
+    ("cvar", ":cvar:",),
+    # missing variable name without description
+    ("ivar", ":ivar foo:",),
+    ("cvar", ":cvar foo:",),
+    # missing variable without name  and description (only spaces)
+    ("ivar", ":ivar  :  ",),
+    ("cvar", ":cvar  :  ",),
+    # missing type
+    ("vartype", ":vartype a:",),
+    ("vartype", ":vartype a:",),
+    # missing type (only spaces)
+    ("vartype", ":vartype a: ",),
+])
+def test_DOC002_class(section, value, violations):
+    content = f'''
+class Foo:
+    """
+    Title.
+
+    {value}
+    """
+
+    pass
 '''
     expected = (
         (3, "DOC002", "Malformed section ({!r})", (section,)),
@@ -270,7 +317,7 @@ def foo(a):
 @pytest.mark.parametrize("docs", [
     "A multi-line\ndocstring",
     "A one-line title\n\n:param str a:",
-    "A one-line title\n\n:var: Ignored section",
+    "A one-line title\n\n:meta deprecated: foo",
 ])
 def test_DOC008_multiline_docstring_no_raise(violations, docs):
     content = f'''
@@ -613,5 +660,43 @@ def foo():
     expected = (
         (3, "DOC007", "Misplaced section ({!r} after {!r})", ('raises', return_key)),
     )
+    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    assert result == expected
+
+
+@pytest.mark.parametrize("section, value", [
+    ("ivar", ":ivar foo bar: description",),
+    ("cvar", ":cvar foo bar: description",),
+    ("vartype", ":vartype foo bar: int",),
+])
+def test_DOC403(section, value, violations):
+    content = f'''
+class Foo:
+    """
+    Title.
+
+    {value}
+    """
+
+    pass
+'''
+    expected = ((3, 'DOC403', 'Variable name with spaces ({!r})', ('foo bar',)),)
+    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    assert result == expected
+
+
+def test_DOC405(violations):
+    content = '''
+class Foo:
+    """
+    Title.
+
+    :ivar bar: description
+    :ivar bar: description
+    """
+
+    pass
+'''
+    expected = ((3, 'DOC405', 'Duplicated variable ({!r})', ('bar',)),)
     result = tuple(sphinxlinter.checker(parse_content(content), violations))
     assert result == expected
