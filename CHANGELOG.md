@@ -1,5 +1,6 @@
 ## Releases
 
+- **Added:** Support por Python 3.14.
 - **Added:** Support for checking variables in docstring sections
 - **Added:** project.urls` section to `pyproject.toml` 
 - **Added:** Support for Module and Class docstring checks.
