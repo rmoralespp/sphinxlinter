@@ -1,5 +1,7 @@
 ## Releases
 
+### v0.0.9 (2025-10-15)
+
 - **Added:** Support por Python 3.14.
 - **Added:** Support for checking variables in docstring sections
 - **Added:** project.urls` section to `pyproject.toml` 
