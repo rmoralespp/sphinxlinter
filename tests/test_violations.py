@@ -191,7 +191,6 @@ def foo(a):
     ("cvar", ":cvar  :  ",),
     # missing type
     ("vartype", ":vartype a:",),
-    ("vartype", ":vartype a:",),
     # missing type (only spaces)
     ("vartype", ":vartype a: ",),
 ])
@@ -659,6 +658,25 @@ def foo():
 
     expected = (
         (3, "DOC007", "Misplaced section ({!r} after {!r})", ('raises', return_key)),
+    )
+    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    assert result == expected
+
+
+def test_DOC402(violations):
+    content = '''
+class Foo:
+    """
+    Title.
+
+    :vartype a: list[str,
+    """
+
+    pass
+'''
+
+    expected = (
+        ((3, 'DOC402', 'Invalid variable type syntax ({!r})', ('list[str,',)),)
     )
     result = tuple(sphinxlinter.checker(parse_content(content), violations))
     assert result == expected

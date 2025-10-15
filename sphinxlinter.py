@@ -316,9 +316,10 @@ class Violations:
         bag = set()
         for var in parsed.variables:
             section_key, sep, name, kind, with_spaces, description, order = var
+            is_not_desc = section_key in class_var_set and not description
 
             # Malformed var: missing ':' or missing name/type when required
-            if not (sep and name) or (section_key == vtype_key and not kind) or section_key in class_var_set and not description:
+            if not (sep and name) or (section_key == vtype_key and not kind) or is_not_desc:
                 yield cls.DOC002, (section_key,)
 
             if kind and not cls.is_valid_type_hint(kind):  # Invalid type syntax
