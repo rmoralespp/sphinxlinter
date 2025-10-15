@@ -23,6 +23,14 @@ classifiers = [
     "Topic :: Documentation",
     "Topic :: Software Development :: Quality Assurance",
 ]
+
+[project.urls]
+Source = "https://github.com/rmoralespp/sphinxlinter"
+Homepage = "https://github.com/rmoralespp/sphinxlinter"
+Changelog = "https://github.com/rmoralespp/sphinxlinter/blob/main/CHANGELOG.md"
+Issues = "https://github.com/rmoralespp/sphinxlinter/issues"
+
+
 [dependency-groups]
 test = [
     "pytest",

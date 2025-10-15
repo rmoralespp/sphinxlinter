@@ -1,5 +1,6 @@
 ## Releases
 
+- **Added:** Add `project.urls` section to `pyproject.toml` 
 - **Added:** Support for Module and Class docstring checks.
 - **Fixed:** `DOC006` false positive.
 
