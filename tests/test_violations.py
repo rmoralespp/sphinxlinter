@@ -62,7 +62,7 @@ def foo():
         (3, 'DOC001', 'Invalid docstring section ({!r})', ('var',)),
         (3, 'DOC001', 'Invalid docstring section ({!r})', ('ivar',)),
         (3, 'DOC001', 'Invalid docstring section ({!r})', ('cvar',)),
-        (3, 'DOC001', 'Invalid docstring section ({!r})', ('vartype',))
+        (3, 'DOC001', 'Invalid docstring section ({!r})', ('vartype',)),
     )
     result = tuple(sphinxlinter.checker(parse_content(content), violations))
     assert result == expected
