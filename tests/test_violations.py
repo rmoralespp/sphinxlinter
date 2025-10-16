@@ -698,7 +698,7 @@ class Foo:
 
     pass
 '''
-    expected = ((3, 'DOC403', 'Variable name with spaces ({!r})', ('foo bar',)),)
+    expected = ((3, 'DOC403', 'Variable name must not contain spaces ({!r})', ('foo bar',)),)
     result = tuple(sphinxlinter.checker(parse_content(content), violations))
     assert result == expected
 

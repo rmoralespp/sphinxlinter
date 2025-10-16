@@ -11,70 +11,72 @@ and are consistent with function signatures and implementation.
 
 **Motivation**
 
-This linter enforces Sphinx docstring rules—like field list style and consistency with function signatures and
+This linter enforces **Sphinx** docstring rules—like field list style and consistency with function signatures and
 implementation—not covered
 by [pydocstyle](https://www.pydocstyle.org/en/stable/error_codes.html), [pydoclint](https://jsh9.github.io/pydoclint/violation_codes.html),
 or [ruff](https://docs.astral.sh/ruff/rules/).
 
-
-**About Variable fields**
-
-Although **Sphinx** does not currently explain this distinction, its syntax was directly inherited from
-[Epydoc](https://epydoc.sourceforge.net/manual-fields.html#variables), 
-so it is generally understood that:
-
-- **var**: instance variable
-- **cvar**: class variable
-- **var**: variable (global or module-level variable)
+### Field list style
 
 In general, a typical Sphinx docstring has the following
 format ([ref](https://sphinx-rtd-tutorial.readthedocs.io/en/latest/docstrings.html)):
 
+This linter focuses on the following Sphinx docstring fields:
 
-**For functions/methods:**
+#### Parameters fields
 
-```
-"""
-[Summary]
+The `param`, `parameter`, `arg`, `argument`, `keyword`, `key` values are all equivalent aliases for the same field.
 
-:param [ParamType] [ParamName]: [ParamDescription]
-:type [ParamName]: [ParamType] 
-...
-:raises [ErrorType]: [ErrorDescription]
-...
-:return: [ReturnDescription]
-:rtype: [ReturnType]
-"""
-```
+Formats:
 
-**For Classes:**
+- `:param [ParamType] [ParamName]: [ParamDescription]` (when type is specified)
+- `:param [ParamName]: [ParamDescription]` (when type is not specified)
 
-```
-"""
-[Summary]
+#### Parameter type field
 
-:ivar [InstanceVarName]: [VarDescription]
-:cvar [ClassVarName]: [VarDescription]
-:vartype [InstanceVarName]: [VarType]
-:vartype [ClassVarName]: [VarType]
-...
-"""
-```
+For specifying parameter types, the `type` field is used.
 
-**For Modules:**
+Format:
 
-```
-"""
-[Summary]
+- `:type [ParamName]: [ParamType]`
 
-:var [ModuleVarName]: [VarDescription]
-:vartype [InstanceVarName]: [VarType]
-...
-"""
-```
+#### Raises field
 
+The `raises`, `raise`, `except`, `exception` values are all equivalent aliases for the same field.
 
-Requirements
+`[ErrorTypes]`: 1 or more exception types, separated by commas.
+
+Formats:
+
+- `:raises [ErrorTypes]: [ErrorDescription]`
+
+#### Return fields
+
+The `return`, `returns` values are equivalent aliases for the same field.
+
+Format:
+
+- `:return: [ReturnDescription]`
+
+#### Return type field
+
+For specifying return types, the `rtype` field is used.
+
+Format:
+
+- `:rtype: [ReturnType]`
+
+#### Variable fields:
+
+Although **Sphinx** does not currently explain this distinction, its syntax was directly inherited from
+[Epydoc](https://epydoc.sourceforge.net/manual-fields.html#variables),
+so it is generally understood that:
+
+- `:var [VarName]: [VarDescription]`  (for module-level or global variables)
+- `:ivar [InstanceVarName]: [VarDescription]`  (for instance variables)
+- `:cvar [ClassVarName]: [VarDescription]`  (for class variables)
+
+### Requirements
 
 - Python 3.9+
 
@@ -95,7 +97,7 @@ folders.
 python sphinxlinter.py path/to/file.py path/to/package_dir
 ```
 
-## Installation
+### Installation
 
 To install **sphinxlinter** using `pip`, run the following command:
 
@@ -103,7 +105,7 @@ To install **sphinxlinter** using `pip`, run the following command:
 pip install sphinx-linter
 ```
 
-## Usage from command line (CLI) if installed
+#### Usage from command line (CLI) if installed
 
 Run on current working directory
 
@@ -125,7 +127,7 @@ Run on specific files or directories
 spxl path/to/file_or_dir ...
 ```
 
-## Arguments and Options
+### Arguments and Options
 
 **Arguments**
 
@@ -140,7 +142,7 @@ spxl path/to/file_or_dir ...
 * `--statistics`: Show counts for every rule with at least one violation.
 * `--quiet`: Suppresses all output except the statistics summary if `--statistics` is also set.
 
-## Violation reporting
+### Violation reporting
 
 Example output
 
@@ -171,21 +173,21 @@ Notes
 - The tool prints findings to stdout and does not modify files.
 - To integrate into CI, run the script and treat any stdout lines as failures in your pipeline logic.
 
-### Violation Codes Table
+#### Violation Codes Table
 
-### DOC0xx: Docstring section issues
+##### DOC0xx: Docstring section issues
 
-| Code   | Description                                       | Justification                                                                |
-|--------|---------------------------------------------------|------------------------------------------------------------------------------|
-| DOC001 | Unknown docstring section                         | Detects sections not recognized by Sphinx conventions.                       |
-| DOC002 | Malformed section                                 | Ensures sections follow correct Sphinx formatting.                           |
-| DOC003 | Missing blank line after docstring                | Improves readability and separates docstrings from code.                     |
-| DOC004 | Missing blank line between summary and sections   | Maintains clarity and standard docstring structure.                          |
-| DOC005 | Too many consecutive empty lines                  | Avoids unnecessary whitespace, keeping docstrings clean.                     |
-| DOC006 | Trailing empty lines                              | Ensures docstrings do not contain superfluous blank lines.                   |
-| DOC007 | Misplaced section                                 | Ensures docstrings sections are correctly located.                           |
-| DOC008 | One-line docstring should end with a period       | Enforces a trailing period on one-line docstrings, as recommended by PEP257. | 
-| DOC009 | Docstring must not use more than 3 double quotes  | Encourages the use of triple quotes for docstrings.                          |
+| Code   | Description                                      | Justification                                                                |
+|--------|--------------------------------------------------|------------------------------------------------------------------------------|
+| DOC001 | Unknown docstring section                        | Detects sections not recognized by Sphinx conventions.                       |
+| DOC002 | Malformed section                                | Ensures sections follow correct Sphinx formatting.                           |
+| DOC003 | Missing blank line after docstring               | Improves readability and separates docstrings from code.                     |
+| DOC004 | Missing blank line between summary and sections  | Maintains clarity and standard docstring structure.                          |
+| DOC005 | Too many consecutive empty lines                 | Avoids unnecessary whitespace, keeping docstrings clean.                     |
+| DOC006 | Trailing empty lines                             | Ensures docstrings do not contain superfluous blank lines.                   |
+| DOC007 | Misplaced section                                | Ensures docstrings sections are correctly located.                           |
+| DOC008 | One-line docstring should end with a period      | Enforces a trailing period on one-line docstrings, as recommended by PEP257. | 
+| DOC009 | Docstring must not use more than 3 double quotes | Encourages the use of triple quotes for docstrings.                          |
 
 **NOTES**:
 
@@ -195,10 +197,11 @@ which enforces a trailing period on the first line of both one-line and multi-li
 **DOC008** only enforces a trailing period on *one-line* docstrings, following the recommendation
 in [PEP 257](https://peps.python.org/pep-0257/#one-line-docstrings).
 
-**DOC009**: Unlike Ruff [`triple-single-quotes`](https://docs.astral.sh/ruff/rules/triple-single-quotes/#triple-single-quotes-d300),
+**DOC009**: Unlike Ruff [
+`triple-single-quotes`](https://docs.astral.sh/ruff/rules/triple-single-quotes/#triple-single-quotes-d300),
 this rule only checks that multi-line docstrings do not start or end with more than three double quotes.
 
-### DOC1xx: Parameter issues
+##### DOC1xx: Parameter issues
 
 | Code   | Description                               | Justification                                                         |
 |--------|-------------------------------------------|-----------------------------------------------------------------------|
@@ -208,7 +211,7 @@ this rule only checks that multi-line docstrings do not start or end with more t
 | DOC104 | Parameter type mismatch with hint         | Ensures documented types match actual function hints.                 |
 | DOC105 | Duplicated parameter                      | Avoids repeating the same parameter in the docstring.                 |
 
-### DOC2xx: Return issues
+##### DOC2xx: Return issues
 
 | Code   | Description                                  | Justification                                                             |
 |--------|----------------------------------------------|---------------------------------------------------------------------------|
@@ -218,23 +221,22 @@ this rule only checks that multi-line docstrings do not start or end with more t
 | DOC204 | Return type mismatch with annotation         | Validates consistency with function return type hints.                    |
 | DOC205 | Duplicated return section                    | Avoids repeated return sections in then docstring.                        |
 
-### DOC3xx: Raises issues
+##### DOC3xx: Raises issues
 
 | Code   | Description                   | Justification                                       |
 |--------|-------------------------------|-----------------------------------------------------|
 | DOC302 | Invalid exception type syntax | Ensures exceptions conform to valid Python syntax.  |
 | DOC305 | Duplicated exception type     | Prevents repetition of exceptions in the docstring. |
 
+##### DOC4xx: Variable issues
 
-### DOC4xx: Variable issues
+| Code   | Description                           | Justification                                                    |
+|--------|---------------------------------------|------------------------------------------------------------------|
+| DOC402 | Invalid variable type syntax          | Ensures variable types conform to valid Python type hint syntax. |
+| DOC403 | Variable name must not contain spaces | Prevents spaces in variable names.                               |
+| DOC405 | Duplicated variable                   | Prevents repetition of variables in the docstring.               |
 
-| Code   | Description                    | Justification                                                    |
-|--------|--------------------------------|------------------------------------------------------------------|
-| DOC402 | Invalid variable type syntax   | Ensures variable types conform to valid Python type hint syntax. |
-| DOC403 | Variable name with spaces      | Variable names should not contain spaces.                        |
-| DOC405 | Duplicated variable            | Prevents repetition of variables in the docstring.               |
-
-## Development
+### Development
 
 To contribute to the project, you can run the following commands for testing and documentation:
 
@@ -242,7 +244,7 @@ First, ensure you have the latest version of `pip`:
 
 ```python -m pip install --upgrade pip```
 
-### Running Unit Tests
+#### Running Unit Tests
 
 Install the development dependencies and run the tests:
 
@@ -252,13 +254,13 @@ pytest tests/ # Run all tests
 pytest --cov sphinxlinter # Run tests with coverage
 ```
 
-### Running Linter
+#### Running Linter
 
 ```
 pip install --group=lint  # Install linter dependencies
 ruff check . # Run linter
 ```
 
-## License
+### License
 
 This project is licensed under the [MIT license](LICENSE).

@@ -29,7 +29,7 @@ raises_set = {"raises", "raise", "except", "exception"}
 # - "var": variable (global or module-level variable)
 class_var_set = {"ivar", "cvar"}
 module_var_key = "var"
-vtype_key = "vartype"
+vartype_key = "vartype"
 ignore_set = {"meta"}  # At this moment, it's ignored
 
 # Summary (everything before the first section or the end of the string)
@@ -141,7 +141,7 @@ class Violations:
 
     # DOC4xx: Variable issues
     DOC402 = (True, "DOC402", "Invalid variable type syntax ({!r})")
-    DOC403 = (True, "DOC403", "Variable name with spaces ({!r})")
+    DOC403 = (True, "DOC403", "Variable name must not contain spaces ({!r})")
     DOC405 = (True, "DOC405", "Duplicated variable ({!r})")
 
     _get_order = operator.attrgetter("order")
@@ -316,15 +316,15 @@ class Violations:
         bag = set()
         for var in parsed.variables:
             section_key, sep, name, kind, with_spaces, description, order = var
-            is_not_desc = section_key in class_var_set and not description
+            missing_desc = section_key in class_var_set and not description
+            missing_type = section_key == vartype_key and not kind
 
-            # Malformed var: missing ':' or missing name/type when required
-            if not (sep and name) or (section_key == vtype_key and not kind) or is_not_desc:
+            # Malformed var: missing ':' or missing name/type when required or missing description when required
+            if not (sep and name) or missing_type or missing_desc:
                 yield cls.DOC002, (section_key,)
-
             if kind and not cls.is_valid_type_hint(kind):  # Invalid type syntax
                 yield cls.DOC402, (kind,)
-            if with_spaces:  # Variable name with spaces
+            if with_spaces:  # Variable name contains spaces
                 yield cls.DOC403, (name,)
             if name and (section_key, name) in bag:  # Duplicated variable in the same section
                 yield cls.DOC405, (name,)
@@ -346,8 +346,7 @@ class Violations:
             yield from cls.validate_params(parsed, parameters)
             yield from cls.validate_return(parsed, parameters.get("return"), has_returns, is_implemented)
             yield from cls.validate_raises(parsed)
-
-        if parsed.kind in (NodeTypes.CLASS, NodeTypes.MODULE):  # Only classes and modules have variables
+        elif parsed.kind in (NodeTypes.CLASS, NodeTypes.MODULE):  # Only classes and modules have variables
             yield from cls.validate_variables(parsed)
 
     def discover(self, parsed, parameters, has_returns, is_implemented, /):
@@ -402,11 +401,11 @@ def parse_section_var(section_key, sep, parts_a, parts_b, order, /):
     return ParsedDocsVar(section_key, sep, var_name, var_type, with_spaces, description, order)
 
 
-def parse_section_vtype(section_key, sep, parts_a, parts_b, order, /):
+def parse_section_vartype(section_key, sep, parts_a, parts_b, order, /):
     var_name, with_spaces = fetch_var_name(parts_a)
-    if parts_b:  # ´:vtype [VarName]: [VarType]´
+    if parts_b:  # ´:vartype [VarName]: [VarType]´
         var_type = " ".join(parts_b)
-    else:  # ´:vtype [VarName]:´ (without type)
+    else:  # ´:vartype [VarName]:´ (without type)
         var_type = None
     return ParsedDocsVar(section_key, sep, var_name, var_type, with_spaces, None, order)
 
@@ -497,8 +496,8 @@ def parse_docs(node, /):
             returns.append(parse_section_return(section_key, sep, parts_a, parts_b, order))
         elif (is_class and section_key in class_var_set) or (is_module and section_key == module_var_key):
             variables.append(parse_section_var(section_key, sep, parts_a, parts_b, order))
-        elif (is_class or is_module) and section_key == vtype_key:
-            variables.append(parse_section_vtype(section_key, sep, parts_a, parts_b, order))
+        elif (is_class or is_module) and section_key == vartype_key:
+            variables.append(parse_section_vartype(section_key, sep, parts_a, parts_b, order))
         elif section_key in ignore_set:
             if section_key not in ignored:
                 ignored.append(section_key)
