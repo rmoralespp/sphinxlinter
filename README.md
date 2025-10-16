@@ -66,7 +66,7 @@ Format:
 
 - `:rtype: [ReturnType]`
 
-#### Variable fields:
+#### Variable fields
 
 Although **Sphinx** does not currently explain this distinction, its syntax was directly inherited from
 [Epydoc](https://epydoc.sourceforge.net/manual-fields.html#variables),

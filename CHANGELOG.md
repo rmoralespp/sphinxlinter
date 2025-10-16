@@ -1,10 +1,17 @@
 ## Releases
 
+### v0.0.10 (2025-10-16)
+
+- **Added:** Unit tests for `DOC402` rule.
+- **Changed:** Documentation in README.md to include new rules and examples.
+- **Changed:** Internal refactoring.
+- **Fixed:** Ruff warnings
+
 ### v0.0.9 (2025-10-15)
 
 - **Added:** Support por Python 3.14.
 - **Added:** Support for checking Variables (`:var`, `:ivar`, `:cvar`, `:vartype`) in docstring sections
-- **Added:** project.urls` section to `pyproject.toml` 
+- **Added:** project.urls` section to `pyproject.toml`
 - **Added:** Support for Module and Class docstring checks.
 - **Fixed:** `DOC006` false positive.
 
