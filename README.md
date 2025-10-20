@@ -110,7 +110,7 @@ src/module.py:10: [DOC101] Parameter documented but not in signature ('unused_pa
 | DOC002 | Malformed section                                | Ensures valid field list syntax.                                                |
 | DOC003 | Missing blank line after docstring               | Improves readability.                                                           |
 | DOC004 | Missing blank line between summary and sections  | Enforces structure consistency.                                                 |
-| DOC005 | Too many consecutive empty lines                 | Prevents unnecessary whitespace.                                                |
+| DOC005 | Too many consecutive blank lines                 | Prevents unnecessary whitespace.                                                |
 | DOC006 | Trailing empty lines                             | Keeps docstrings compact.                                                       |
 | DOC007 | Misplaced section                                | Enforces section order and grouping.                                            |
 | DOC008 | One-line docstring should end with a period      | Complies with [PEP 257](https://peps.python.org/pep-0257/#one-line-docstrings). |
@@ -137,20 +137,20 @@ this rule only checks that multi-line docstrings do not start or end with more t
 | DOC101 | Parameter documented but not in signature | Detects undocumented or extra parameters. |
 | DOC102 | Invalid parameter type syntax             | Enforces valid Python type hints.         |
 | DOC103 | Parameter type already in signature       | Avoids redundant type info.               |
-| DOC104 | Parameter type mismatch with with hint    | Ensures consistency with annotations.     |
+| DOC104 | Parameter type mismatch with annotation   | Ensures consistency with annotations.     |
 | DOC105 | Duplicated parameter                      | Prevents repetition.                      |
 
 ---
 
 ### DOC2xx — Returns
 
-| Code   | Description                                  | Purpose                                 |
-|--------|----------------------------------------------|-----------------------------------------|
-| DOC201 | Return documented but function has no return | Detects unnecessary return sections.    |
-| DOC202 | Invalid return type syntax                   | Enforces valid type expressions.        |
-| DOC203 | Return type already in signature             | Avoids redundancy.                      |
-| DOC204 | Return type mismatch with annotation         | Validates against function annotations. |
-| DOC205 | Duplicated return section                    | Prevents duplication.                   |
+| Code   | Description                                            | Purpose                                 |
+|--------|--------------------------------------------------------|-----------------------------------------|
+| DOC201 | Return documented but function has no return statement | Detects unnecessary return sections.    |
+| DOC202 | Invalid return type syntax                             | Enforces valid type expressions.        |
+| DOC203 | Return type already in signature                       | Avoids redundancy.                      |
+| DOC204 | Return type mismatch with annotation                   | Validates against function annotations. |
+| DOC205 | Duplicated return section                              | Prevents duplication.                   |
 
 ---
 
@@ -165,11 +165,11 @@ this rule only checks that multi-line docstrings do not start or end with more t
 
 ### DOC4xx — Variables
 
-| Code   | Description                           | Purpose                           |
-|--------|---------------------------------------|-----------------------------------|
-| DOC402 | Invalid variable type syntax          | Enforces valid Python type hints. |
-| DOC403 | Variable name must not contain spaces | Ensures valid identifiers.        |
-| DOC405 | Duplicated variable                   | Prevents repetition.              |
+| Code   | Description                               | Purpose                           |
+|--------|-------------------------------------------|-----------------------------------|
+| DOC402 | Invalid variable type syntax              | Enforces valid Python type hints. |
+| DOC403 | Variable name contains invalid whitespace | Ensures valid identifiers.        |
+| DOC405 | Duplicated variable                       | Prevents repetition.              |
 
 ---
 

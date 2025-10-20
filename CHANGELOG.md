@@ -1,5 +1,10 @@
 ## Releases
 
+### v0.0.11 (2025-10-20)
+
+- **Changed:** `Readme.md` improvements.
+- **Changed:** Descriptions of several rules for clarity.
+
 ### v0.0.10 (2025-10-16)
 
 - **Added:** Unit tests for `DOC402` rule.

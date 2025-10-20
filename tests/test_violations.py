@@ -258,7 +258,7 @@ def foo(a):
 '''
 
     expected = (
-        (3, "DOC005", "Too many consecutive empty lines", ()),
+        (3, "DOC005", "Too many consecutive blank lines", ()),
     )
     result = tuple(sphinxlinter.checker(parse_content(content), violations))
     assert result == expected
@@ -434,7 +434,7 @@ def foo(a:int):
         (
             3,
             "DOC104",
-            "Parameter type mismatch with hint ({!r} != {!r})",
+            "Parameter type mismatch with annotation ({!r} != {!r})",
             ("str", "int"),
         ),
     )
@@ -476,7 +476,7 @@ def foo(a, b):
     pass
 '''
     expected = (
-        (3, 'DOC007', 'Misplaced section ({!r} after {!r})', ('param', 'raises',)),
+        (3, 'DOC007', 'Misplaced section ({!r} appears after {!r})', ('param', 'raises',)),
     )
     result = tuple(sphinxlinter.checker(parse_content(content), violations))
     assert result == expected
@@ -497,9 +497,9 @@ def foo(a, b, c):
     pass
 '''
     expected = (
-        (3, 'DOC007', 'Misplaced section ({!r} after {!r})', ('param', 'raises')),
-        (3, 'DOC007', 'Misplaced section ({!r} after {!r})', ('type', 'raises')),
-        (3, 'DOC007', 'Misplaced section ({!r} after {!r})', ('type', 'return')),
+        (3, 'DOC007', 'Misplaced section ({!r} appears after {!r})', ('param', 'raises')),
+        (3, 'DOC007', 'Misplaced section ({!r} appears after {!r})', ('type', 'raises')),
+        (3, 'DOC007', 'Misplaced section ({!r} appears after {!r})', ('type', 'return')),
     )
     result = tuple(sphinxlinter.checker(parse_content(content), violations))
     assert result == expected
@@ -519,7 +519,7 @@ def foo():
 '''
 
     expected = (
-        (3, "DOC201", "Return documented but function has no return", ()),
+        (3, "DOC201", "Return documented but function has no return statement", ()),
     )
     result = tuple(sphinxlinter.checker(parse_content(content), violations))
     assert result == expected
@@ -657,7 +657,7 @@ def foo():
 '''
 
     expected = (
-        (3, "DOC007", "Misplaced section ({!r} after {!r})", ('raises', return_key)),
+        (3, "DOC007", "Misplaced section ({!r} appears after {!r})", ('raises', return_key)),
     )
     result = tuple(sphinxlinter.checker(parse_content(content), violations))
     assert result == expected
@@ -698,7 +698,7 @@ class Foo:
 
     pass
 '''
-    expected = ((3, 'DOC403', 'Variable name must not contain spaces ({!r})', ('foo bar',)),)
+    expected = ((3, 'DOC403', 'Variable name contains invalid whitespace ({!r})', ('foo bar',)),)
     result = tuple(sphinxlinter.checker(parse_content(content), violations))
     assert result == expected
 

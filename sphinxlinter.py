@@ -111,9 +111,9 @@ class Violations:
     DOC002 = (True, "DOC002", "Malformed section ({!r})")
     DOC003 = (True, "DOC003", "Missing blank line after docstring")
     DOC004 = (True, "DOC004", "Missing blank line between summary and sections")
-    DOC005 = (True, "DOC005", "Too many consecutive empty lines")
+    DOC005 = (True, "DOC005", "Too many consecutive blank lines")
     DOC006 = (True, "DOC006", "Trailing empty lines")
-    DOC007 = (True, "DOC007", "Misplaced section ({!r} after {!r})")
+    DOC007 = (True, "DOC007", "Misplaced section ({!r} appears after {!r})")
     # Ruff (missing-trailing-period) → enforces a trailing period on all docstring summaries (one-line and multi-line).
     # Rule (DOC008) → only enforces a trailing period on one-line docstrings, as recommended by PEP257.
     DOC008 = (True, "DOC008", "One-line docstring should end with a period")
@@ -125,11 +125,11 @@ class Violations:
     DOC101 = (True, "DOC101", "Parameter documented but not in signature ({!r})")
     DOC102 = (True, "DOC102", "Invalid parameter type syntax ({!r})")
     DOC103 = (True, "DOC103", "Parameter type already in signature ({!r})")
-    DOC104 = (True, "DOC104", "Parameter type mismatch with hint ({!r} != {!r})")
+    DOC104 = (True, "DOC104", "Parameter type mismatch with annotation ({!r} != {!r})")
     DOC105 = (True, "DOC105", "Duplicated parameter ({!r})")
 
     # DOC2xx: Return issues
-    DOC201 = (True, "DOC201", "Return documented but function has no return")
+    DOC201 = (True, "DOC201", "Return documented but function has no return statement")
     DOC202 = (True, "DOC202", "Invalid return type syntax ({!r})")
     DOC203 = (True, "DOC203", "Return type already in signature ({!r})")
     DOC204 = (True, "DOC204", "Return type mismatch with annotation ({!r} != {!r})")
@@ -141,7 +141,7 @@ class Violations:
 
     # DOC4xx: Variable issues
     DOC402 = (True, "DOC402", "Invalid variable type syntax ({!r})")
-    DOC403 = (True, "DOC403", "Variable name must not contain spaces ({!r})")
+    DOC403 = (True, "DOC403", "Variable name contains invalid whitespace ({!r})")
     DOC405 = (True, "DOC405", "Duplicated variable ({!r})")
 
     _get_order = operator.attrgetter("order")
