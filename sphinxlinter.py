@@ -483,7 +483,6 @@ def fetch_bad_ws_definitions(section, section_key, sep, a_raw, b_raw, /):
     :param str a_raw: Part before the first ':'
     :param str b_raw: Part after the first ':'
 
-
     :return: Generator yielding section definitions with bad whitespaces.
     """
 
