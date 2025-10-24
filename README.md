@@ -14,7 +14,8 @@ It validates structure, field consistency, and alignment between documentation a
 
 Sphinx-style docstrings are widely used across Python projects, but existing tools such as
 [pydocstyle](https://www.pydocstyle.org), [pydoclint](https://jsh9.github.io/pydoclint/),
-and [ruff](https://docs.astral.sh/ruff/) focus primarily on general docstring formatting, **PEP257** compliance,
+and [ruff](https://docs.astral.sh/ruff/) focus primarily on general docstring formatting,
+**[PEP257](https://peps.python.org/pep-0257)** compliance,
 and style enforcement.
 
 It is designed to **complement**, not overlap with, these tools.  
@@ -23,10 +24,14 @@ that go beyond what other linters cover.
 
 Specifically, it focuses on:
 
-- Enforcing **Sphinx field list syntax** (`:param:`, `:type:`, `:return:`, `:raises:`, etc.)
-- Verifying **alignment** between documented fields and function signatures or type hints
-- Validating **section order, duplication, type hints syntax and completeness**
-- Producing **concise, CI-friendly reports** with structured rule codes
+- 🧩 Enforces
+  [Sphinx-style field list](https://www.sphinx-doc.org/en/master/usage/domains/python.html#info-field-lists) formatting
+- 🛠️ Ensures **consistency** between docstrings, signatures, and implementation
+- 📐 Validates **section order, duplication, and syntax of documented types and errors**
+- 📊 Generates concise, **CI-friendly** reports
+- ⚙️ Provides a **minimalist CLI** for easy workflow integration
+- 🐍 Uses only the **Python standard library** for full compatibility
+- 🧼 Promotes **clean, maintainable documentation**
 
 ---
 
@@ -34,7 +39,7 @@ Specifically, it focuses on:
 
 Requires **Python ≥ 3.9**.
 
-*No dependencies beyond the Python standard library.*
+To install via `pip`, run:
 
 ```bash
 pip install sphinx-linter
@@ -43,15 +48,6 @@ pip install sphinx-linter
 ---
 
 ## Quick Start
-
-### Standalone Script
-
-To use the standalone script, download the `sphinxlinter.py` script from
-following [link](https://github.com/rmoralespp/sphinxlinter/archive/refs/heads/main.zip) and run it with Python:
-
-```bash
-python sphinxlinter.py path/to/source/
-```
 
 ### CLI Tool
 
@@ -71,6 +67,15 @@ spxl path/to/file.py path/to/package/
 > [!NOTE]
 >
 > Directories are scanned recursively for `.py` files, ignoring virtual environments and cache folders.
+
+### Standalone Script
+
+To use the standalone script, download the `sphinxlinter.py` script from
+following [link](https://github.com/rmoralespp/sphinxlinter/archive/refs/heads/main.zip) and run it with Python:
+
+```bash
+python sphinxlinter.py path/to/source/
+```
 
 ---
 
@@ -97,7 +102,7 @@ path/to/file.py:LINE-NUMBER: [CODE] Description of the violation.
 ```
 
 > [!TIP]
-> 
+>
 > Use `--quiet` to suppress output except for statistics summary if `--statistics` is also set.
 
 > [!NOTE]
@@ -137,10 +142,10 @@ path/to/file.py:LINE-NUMBER: [CODE] Description of the violation.
 > [!NOTE]
 >
 >  **DOC008**: This rule differs from Ruff’s similar rule [
->  `missing-trailing-period`](https://docs.astral.sh/ruff/rules/missing-trailing-period),
->  which enforces a trailing period on the first line of both one-line and multi-line docstrings. By contrast, the rule
->  **DOC008** only enforces a trailing period on *one-line* docstrings, following the recommendation
->  in [PEP 257](https://peps.python.org/pep-0257/#one-line-docstrings).
+> `missing-trailing-period`](https://docs.astral.sh/ruff/rules/missing-trailing-period),
+> which enforces a trailing period on the first line of both one-line and multi-line docstrings. By contrast, the rule
+> **DOC008** only enforces a trailing period on *one-line* docstrings, following the recommendation
+> in [PEP 257](https://peps.python.org/pep-0257/#one-line-docstrings).
 
 > [!NOTE]
 >
