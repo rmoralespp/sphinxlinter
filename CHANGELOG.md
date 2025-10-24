@@ -3,6 +3,8 @@
 ### v0.0.12 (2025-10-24)
 
 - **Added:** `DOC010` Section definition contains invalid whitespace
+- **Added:** Unit tests for `DOC010` rule.
+- **Changed:** Updated README.md to include new rule and examples.
 
 ### v0.0.11 (2025-10-20)
 

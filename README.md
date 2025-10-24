@@ -51,7 +51,7 @@ pip install sphinx-linter
 
 ### CLI Tool
 
-Alternatively, after installation via `pip`, you can run the `sphinxlinter` command directly from your terminal.
+After installation via `pip`, you can run the `sphinxlinter` command directly from your terminal.
 
 **Run on the current directory:**
 
@@ -70,7 +70,7 @@ spxl path/to/file.py path/to/package/
 
 ### Standalone Script
 
-To use the standalone script, download the `sphinxlinter.py` script from
+Alternatively, you can download the standalone script by clicking the
 following [link](https://github.com/rmoralespp/sphinxlinter/archive/refs/heads/main.zip) and run it with Python:
 
 ```bash
