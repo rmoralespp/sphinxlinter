@@ -14,7 +14,7 @@ It validates structure, field consistency, and alignment between documentation a
 
 Sphinx-style docstrings are widely used across Python projects, but existing tools such as
 [pydocstyle](https://www.pydocstyle.org), [pydoclint](https://jsh9.github.io/pydoclint/),
-and [ruff](https://docs.astral.sh/ruff/) focus primarily on general docstring formatting, *PEP257** compliance, 
+and [ruff](https://docs.astral.sh/ruff/) focus primarily on general docstring formatting, **PEP257** compliance,
 and style enforcement.
 
 It is designed to **complement**, not overlap with, these tools.  
@@ -44,6 +44,8 @@ pip install sphinx-linter
 
 ## Quick Start
 
+### Standalone Script
+
 To use the standalone script, download the `sphinxlinter.py` script from
 following [link](https://github.com/rmoralespp/sphinxlinter/archive/refs/heads/main.zip) and run it with Python:
 
@@ -51,18 +53,24 @@ following [link](https://github.com/rmoralespp/sphinxlinter/archive/refs/heads/m
 python sphinxlinter.py path/to/source/
 ```
 
-Alternatively, after installation via `pip`, you can run the `sphinxlinter` command directly from your terminal:
+### CLI Tool
+
+Alternatively, after installation via `pip`, you can run the `sphinxlinter` command directly from your terminal.
+
+**Run on the current directory:**
 
 - Run in the current directory: `sphinxlinter .`
 - Or use the short alias: `spxl .`
 
-Run on specific files or directories:
+**Run on specific files or directories:**
 
 ```bash
 spxl path/to/file.py path/to/package/
 ```
 
-Directories are scanned recursively for `.py` files, ignoring virtual environments and cache folders.
+> [!NOTE]
+>
+> Directories are scanned recursively for `.py` files, ignoring virtual environments and cache folders.
 
 ---
 
@@ -82,15 +90,20 @@ Directories are scanned recursively for `.py` files, ignoring virtual environmen
 
 ## Output Format
 
-Example:
+When violations are found, the tool outputs lines in the following format:
 
 ```text
-src/module.py:42: [DOC102] Invalid parameter type syntax ('List[int]')
-src/module.py:10: [DOC101] Parameter documented but not in signature ('unused_param')
+path/to/file.py:LINE-NUMBER: [CODE] Description of the violation.
 ```
 
-**Format:**  
-`filename:line: [CODE] message`
+> [!TIP]
+> 
+> Use `--quiet` to suppress output except for statistics summary if `--statistics` is also set.
+
+> [!NOTE]
+>
+> * Exit code `0` means no violations were found; exit code `1` indicates that violations were detected.
+> * The tool never modifies source files.
 
 **Categories:**
 
@@ -118,17 +131,22 @@ src/module.py:10: [DOC101] Parameter documented but not in signature ('unused_pa
 | DOC008 | One-line docstring should end with a period      | Complies with [PEP 257](https://peps.python.org/pep-0257/#one-line-docstrings). |
 | DOC009 | Docstring must not use more than 3 double quotes | Promotes consistent quoting.                                                    |
 | DOC010 | Section definition contains invalid whitespace   | Ensures proper formatting.                                                      |
+
 ---
 
-**DOC008**: This rule differs from Ruff’s similar rule [
-`missing-trailing-period`](https://docs.astral.sh/ruff/rules/missing-trailing-period),
-which enforces a trailing period on the first line of both one-line and multi-line docstrings. By contrast, the rule
-**DOC008** only enforces a trailing period on *one-line* docstrings, following the recommendation
-in [PEP 257](https://peps.python.org/pep-0257/#one-line-docstrings).
+> [!NOTE]
+>
+>  **DOC008**: This rule differs from Ruff’s similar rule [
+>  `missing-trailing-period`](https://docs.astral.sh/ruff/rules/missing-trailing-period),
+>  which enforces a trailing period on the first line of both one-line and multi-line docstrings. By contrast, the rule
+>  **DOC008** only enforces a trailing period on *one-line* docstrings, following the recommendation
+>  in [PEP 257](https://peps.python.org/pep-0257/#one-line-docstrings).
 
-**DOC009**: Unlike Ruff [
-`triple-single-quotes`](https://docs.astral.sh/ruff/rules/triple-single-quotes/#triple-single-quotes-d300),
-this rule only checks that multi-line docstrings do not start or end with more than three double quotes.
+> [!NOTE]
+>
+> **DOC009**: Unlike Ruff [
+> `triple-single-quotes`](https://docs.astral.sh/ruff/rules/triple-single-quotes/#triple-single-quotes-d300),
+> this rule only checks that multi-line docstrings do not start or end with more than three double quotes.
 
 ---
 
