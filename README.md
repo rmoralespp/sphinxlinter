@@ -14,8 +14,8 @@ It validates structure, field consistency, and alignment between documentation a
 
 Sphinx-style docstrings are widely used across Python projects, but existing tools such as
 [pydocstyle](https://www.pydocstyle.org), [pydoclint](https://jsh9.github.io/pydoclint/),
-and [ruff](https://docs.astral.sh/ruff/) focus primarily on general docstring formatting, PEP 257 compliance, and style
-enforcement.
+and [ruff](https://docs.astral.sh/ruff/) focus primarily on general docstring formatting, *PEP257** compliance, 
+and style enforcement.
 
 It is designed to **complement**, not overlap with, these tools.  
 It targets **Sphinx-specific field list conventions** and performs **semantic consistency checks**
