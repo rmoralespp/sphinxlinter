@@ -43,6 +43,8 @@ empty_lines_regex = re.compile("(?:^[ \t]*\r?\n){2,}(?=[^\r\n])", re.MULTILINE)
 # Docstring starting or ending with only quotes lines
 quotes_starts_regex = re.compile(r'^"+\s*$')
 quotes_ends_regex = re.compile(r'^\s*"+$')
+# Bad whitespace in section definition: (consecutive spaces or trailing space or leading space)
+section_bad_ws_regex = re.compile(r'(\s{2,}|^\s+|\s+$)')
 
 
 class NodeTypes:
@@ -94,6 +96,7 @@ class ParsedDocs(typing.NamedTuple):
     variables: list[ParsedDocsVar]
     invalid: list[str]  # invalid section keys
     ignored: list[str]  # ignored section keys
+    bad_whitespaces_def: list[str]  # section definitions with bad whitespaces
 
     rawdocs: str | None  # Raw docstring
     docs: str | None  # Cleaned docstring (inspect.cleandoc)
@@ -120,6 +123,8 @@ class Violations:
     # Unlike Ruff D300 (triple-single-quotes),
     # this rule only checks that multi-line docstrings do not start or end with more than three double quotes.
     DOC009 = (True, "DOC009", "Docstring must not use more than 3 double quotes")
+
+    DOC010 = (True, "DOC010", "Section definition contains invalid whitespace ({!r})")
 
     # DOC1xx: Parameter issues
     DOC101 = (True, "DOC101", "Parameter documented but not in signature ({!r})")
@@ -191,6 +196,11 @@ class Violations:
                 if left != right:
                     # finditer: Empty matches are included in the result.
                     yield cls.DOC006, ()
+
+    @classmethod
+    def validate_bad_whitespaces(cls, parsed, /):
+        for section_def in parsed.bad_whitespaces_def:
+            yield cls.DOC010, (section_def,)
 
     @classmethod
     def validate_head_tail_quotes(cls, parsed, /):
@@ -341,6 +351,7 @@ class Violations:
         yield from cls.validate_empty_lines(parsed)
         yield from cls.validate_head_tail_quotes(parsed)
         yield from cls.validate_summary(parsed)
+        yield from cls.validate_bad_whitespaces(parsed)
 
         if parsed.kind == NodeTypes.FUNCTION:  # Only functions have parameters, returns, and raises
             yield from cls.validate_params(parsed, parameters)
@@ -460,6 +471,32 @@ def get_node_type(node, /):
     return kind
 
 
+def fetch_bad_ws_definitions(section, section_key, sep, a_raw, b_raw, /):
+    """
+    Yields the parts of the section definition that have bad whitespaces.
+
+    :param str section: Full section text.
+    :param str section_key: Section key (first word of part before ':').
+    :param bool sep: True if ':' was present.
+    :param str a_raw: Part before the first ':'
+    :param str b_raw: Part after the first ':'
+
+    :return: Generator yielding section definitions with bad whitespaces.
+    """
+
+    bad_ws_a = bool(section_bad_ws_regex.search(a_raw))
+    # Check for bad whitespaces in part after ':' only for specific sections where right-side is type
+    if sep and b_raw and section_key in (ptype_key, rtype_key, vartype_key):
+        first_line = b_raw.splitlines()[0]  # only first line is relevant
+        first_line = first_line.removeprefix(" ")  # remove leading space added by the ':' separator
+        bad_ws_b = bool(section_bad_ws_regex.search(first_line))
+    else:
+        bad_ws_b = False
+
+    if bad_ws_a or bad_ws_b:
+        yield section
+
+
 def parse_docs(node, /):
     params = list()
     raises = list()
@@ -469,6 +506,7 @@ def parse_docs(node, /):
     # Does not use 'set' to preserve the order of appearance
     invalid = list()
     ignored = list()
+    bad_whitespaces_def = list()  # List of section definitions with bad whitespaces
 
     rawdocs = ast.get_docstring(node, clean=False)
     docs = rawdocs if rawdocs is None else inspect.cleandoc(rawdocs)
@@ -477,15 +515,22 @@ def parse_docs(node, /):
     is_func = kind == NodeTypes.FUNCTION
     is_class = kind == NodeTypes.CLASS
     is_module = kind == NodeTypes.MODULE
+
     for order, section in enumerate(itersections(docs)):
-        a, sep, b = section.lstrip(":").partition(":")
+        a_raw, sep, b_raw = section.lstrip(":").partition(":")
         sep = bool(sep)  # True if ':' was present
-        b = b.splitlines()[0].strip() if (b := b.strip()) else ""  # Only first line of description is relevant.
-        parts_a = a.split()
+        b = b.splitlines()[0].strip() if (b := b_raw.strip()) else ""  # Only first line of description is relevant.
+
+        parts_a = a_raw.split()
         parts_b = b.split()
         section_key = parts_a[0].lower()
+
+        # Check for bad whitespaces in section definition
+        bad_whitespaces_def.extend(fetch_bad_ws_definitions(section, section_key, sep, a_raw, b_raw))
+
         if is_func and section_key in param_set:
             params.append(parse_section_param(section_key, sep, parts_a, order))
+
         elif is_func and section_key == ptype_key:
             params.append(parse_section_type(section_key, sep, parts_a, parts_b, order))
         elif is_func and section_key in rtype_key:
@@ -528,6 +573,7 @@ def parse_docs(node, /):
         variables=variables,
         invalid=invalid,
         ignored=ignored,
+        bad_whitespaces_def=bad_whitespaces_def,
     )
 
 

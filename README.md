@@ -51,6 +51,8 @@ following [link](https://github.com/rmoralespp/sphinxlinter/archive/refs/heads/m
 python sphinxlinter.py path/to/source/
 ```
 
+Alternatively, after installation via `pip`, you can run the `sphinxlinter` command directly from your terminal:
+
 - Run in the current directory: `sphinxlinter .`
 - Or use the short alias: `spxl .`
 
@@ -115,7 +117,7 @@ src/module.py:10: [DOC101] Parameter documented but not in signature ('unused_pa
 | DOC007 | Misplaced section                                | Enforces section order and grouping.                                            |
 | DOC008 | One-line docstring should end with a period      | Complies with [PEP 257](https://peps.python.org/pep-0257/#one-line-docstrings). |
 | DOC009 | Docstring must not use more than 3 double quotes | Promotes consistent quoting.                                                    |
-
+| DOC010 | Section definition contains invalid whitespace   | Ensures proper formatting.                                                      |
 ---
 
 **DOC008**: This rule differs from Ruff’s similar rule [

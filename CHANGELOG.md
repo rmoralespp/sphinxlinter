@@ -1,5 +1,7 @@
 ## Releases
 
+- **Added:** `DOC010` Section definition contains invalid whitespace
+
 ### v0.0.11 (2025-10-20)
 
 - **Changed:** `Readme.md` improvements.
