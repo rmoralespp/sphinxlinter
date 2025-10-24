@@ -487,13 +487,14 @@ def fetch_bad_ws_definitions(section, section_key, sep, a_raw, b_raw, /):
     """
 
     if section_key in types_set:  # Check both sides for type sections
+        # Get right side (after '') without leading spaces and split into lines
         right_side_lines = b_raw.removeprefix(" ").splitlines()
         # Only first line of right side is relevant.
         right_side = right_side_lines[0] if right_side_lines else ""
         if section_bad_ws_regex.search(a_raw) or section_bad_ws_regex.search(right_side):
             yield section.splitlines()[0]  # Return only the section definition line
 
-    elif bool(section_bad_ws_regex.search(a_raw)):  # Other sections only check left-side
+    elif section_bad_ws_regex.search(a_raw):  # Other sections only check left-side
         # Reconstruct section definition with only left-side
         yield ":{}{}".format(a_raw, ":" if sep else "")
 
