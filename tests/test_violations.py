@@ -363,37 +363,36 @@ def foo():
     assert result == expected
 
 
-@pytest.mark.parametrize("section", [
+@pytest.mark.parametrize("section, expected_section", [
     # param type
-    ":type  a: str",  # consecutive spaces between type and name
-    ": type a: str",  # leading space before type keyword
-    ":type a : str",  # trailing space after name
-    ":type a:  str",  # leading space before type hint
-    ":type  a:  str",  # consecutive spaces both sides
+    (":type  a: str", ":type  a: str"),  # consecutive spaces between type and name
+    (": type a: str", ": type a: str"),   # leading space before type keyword
+    (":type a : str", ":type a : str"),   # trailing space after name
+    (":type a:  str", ":type a:  str"),   # leading space before type hint
+    (":type  a:  str", ":type  a:  str"),   # consecutive spaces both sides
     # param
-    ":param  str  a: description",  # consecutive spaces
-    ": param str a: description",  # leading space before param keyword
-    ":param str a : description",  # trailing space after name
-    ":param  str a: description",  # leading space before type hint
-    ":param str  a: description",  # leading space before name
+    (":param  str  a: description", ":param  str  a:"),   # consecutive spaces
+    (": param str a: description", ": param str a:"),   # leading space before param keyword
+    (":param str a : description", ":param str a :"),   # trailing space after name
+    (":param  str a: description", ":param  str a:"),   # leading space before type hint
+    (":param str  a: description", ":param str  a:"),   # leading space before name
     # return
-    ": return: description",  # leading space before return keyword
-    ":return : description",  # trailing space after return keyword
-    # rtype
-    ": rtype: int",  # leading space before rtype keyword
-    ":rtype : int",  # trailing space after rtype keyword
-    ":rtype:  int",   # leading space before type hint
-    # ":rtype: int  ",  # trailing space after type hint
-    ": rtype :  int",  # leading and trailing space both sides
-    # raises
-    ": raises ValueError: description",  # leading ws before raises keyword
-    ":raises  ValueError: description",  # consecutive ws after raises keyword
-    ":raises ValueError : description",  # trailing ws after err name
-    ":raises ValueError,  KeyError: description",  # Consecutive ws after comma
-    ":raises ValueError, KeyError : description",  # trailing ws after last err name
-    ":raises ValueError  , KeyError: description",  # leading ws before comma
+    (": return: description", ": return:"),   # leading space before return keyword
+    (":return : description", ":return :"),   # trailing space after return keyword
+    # # rtype
+    (": rtype: int", ": rtype: int"),   # leading space before rtype keyword
+    (":rtype : int", ":rtype : int"),   # trailing space after rtype keyword
+    (":rtype:  int", ":rtype:  int"),    # leading space before type hint
+    (": rtype :  int", ": rtype :  int"),   # leading and trailing space both sides
+    # # raises
+    (": raises ValueError: description", ": raises ValueError:"),   # leading ws before raises keyword
+    (":raises  ValueError: description", ":raises  ValueError:"),   # consecutive ws after raises keyword
+    (":raises ValueError : description", ":raises ValueError :"),   # trailing ws after error
+    (":raises ValueError,  KeyError: description", ":raises ValueError,  KeyError:"),   # Consecutive ws after comma
+    (":raises ValueError, KeyError : description", ":raises ValueError, KeyError :"),   # trailing ws after last error
+    (":raises ValueError  , KeyError: description", ":raises ValueError  , KeyError:"),   # leading ws before comma
 ])
-def test_DOC010_function(section, violations):
+def test_DOC010_function(section, violations, expected_section):
     content = f'''
 def foo(a):
     """
@@ -405,7 +404,7 @@ def foo(a):
     return a
 '''
     expected = (
-        (3, "DOC010", "Section definition contains invalid whitespace ({!r})", (section,)),
+        (3, "DOC010", "Section definition contains invalid whitespace ({!r})", (expected_section,)),
     )
     result = tuple(sphinxlinter.checker(parse_content(content), violations))
     assert result == expected
@@ -432,23 +431,23 @@ def foo(a):
     assert result == expected
 
 
-@pytest.mark.parametrize("section", [
+@pytest.mark.parametrize("section, expected_section", [
     # var type
-    ":vartype  a: int",  # consecutive spaces between vartype and name
-    ": vartype a: int",  # leading space before vartype keyword
-    ":vartype a : int",  # trailing space after name
-    ":vartype a:  int",  # leading space before type hint
-    ":vartype  a:  int",  # consecutive spaces both sides
+    (":vartype  a: int", ":vartype  a: int"),  # consecutive spaces between vartype and name
+    (": vartype a: int", ": vartype a: int"),  # leading space before vartype keyword
+    (":vartype a : int", ":vartype a : int"),  # trailing space after name
+    (":vartype a:  int", ":vartype a:  int"),  # leading space before type hint
+    (":vartype  a:  int", ":vartype  a:  int"),  # consecutive spaces both sides
     # ivar
-    ":ivar  a: description",  # consecutive spaces
-    ": ivar a: description",  # leading space before ivar keyword
-    ":ivar a : description",  # trailing space after name
+    (":ivar  a: description", ":ivar  a:"),  # consecutive spaces
+    (": ivar a: description", ": ivar a:"),  # leading space before ivar keyword
+    (":ivar a : description", ":ivar a :"),  # trailing space after name
     # cvar
-    ":cvar  a: description",  # consecutive spaces
-    ": cvar a: description",  # leading space before cvar keyword
-    ":cvar a : description",  # trailing space after name
+    (":cvar  a: description", ":cvar  a:"),  # consecutive spaces
+    (": cvar a: description", ": cvar a:"),  # leading space before cvar keyword
+    (":cvar a : description", ":cvar a :"),  # trailing space after name
 ])
-def test_DOC010_class(section, violations):
+def test_DOC010_class(section, expected_section, violations):
     content = f'''
 class Foo:
     """
@@ -460,7 +459,7 @@ class Foo:
     pass
 '''
     expected = (
-        (3, "DOC010", "Section definition contains invalid whitespace ({!r})", (section,)),
+        (3, "DOC010", "Section definition contains invalid whitespace ({!r})", (expected_section,)),
     )
     result = tuple(sphinxlinter.checker(parse_content(content), violations))
     assert result == expected

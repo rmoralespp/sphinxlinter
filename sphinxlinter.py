@@ -32,6 +32,8 @@ module_var_key = "var"
 vartype_key = "vartype"
 ignore_set = {"meta"}  # At this moment, it's ignored
 
+types_set = {ptype_key, rtype_key, vartype_key}  # Sections that define types
+
 # Summary (everything before the first section or the end of the string)
 summary_regex = re.compile(r'^(.*?)(?=^:|\Z)', flags=re.DOTALL | re.MULTILINE)
 # Section (start with ':' and end before next ':' at start of line or end of string)
@@ -481,20 +483,20 @@ def fetch_bad_ws_definitions(section, section_key, sep, a_raw, b_raw, /):
     :param str a_raw: Part before the first ':'
     :param str b_raw: Part after the first ':'
 
+
     :return: Generator yielding section definitions with bad whitespaces.
     """
 
-    bad_ws_a = bool(section_bad_ws_regex.search(a_raw))
-    # Check for bad whitespaces in part after ':' only for specific sections where right-side is type
-    if sep and b_raw and section_key in (ptype_key, rtype_key, vartype_key):
-        first_line = b_raw.splitlines()[0]  # only first line is relevant
-        first_line = first_line.removeprefix(" ")  # remove leading space added by the ':' separator
-        bad_ws_b = bool(section_bad_ws_regex.search(first_line))
-    else:
-        bad_ws_b = False
+    if section_key in types_set:  # Check both sides for type sections
+        right_side_lines = b_raw.removeprefix(" ").splitlines()
+        # Only first line of right side is relevant.
+        right_side = right_side_lines[0] if right_side_lines else ""
+        if section_bad_ws_regex.search(a_raw) or section_bad_ws_regex.search(right_side):
+            yield section.splitlines()[0]  # Return only the section definition line
 
-    if bad_ws_a or bad_ws_b:
-        yield section
+    elif bool(section_bad_ws_regex.search(a_raw)):  # Other sections only check left-side
+        # Reconstruct section definition with only left-side
+        yield ":{}{}".format(a_raw, ":" if sep else "")
 
 
 def parse_docs(node, /):
@@ -649,9 +651,9 @@ def is_not_implemented(node, /, rawdocs=None):
             exc = stmt.exc
             error_name = NotImplementedError.__name__
             if (
-                isinstance(exc, ast.Call)
-                and isinstance(exc.func, ast.Name)
-                and exc.func.id == error_name
+                    isinstance(exc, ast.Call)
+                    and isinstance(exc.func, ast.Name)
+                    and exc.func.id == error_name
             ):
                 return True
 
