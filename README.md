@@ -190,28 +190,29 @@ Treat any output as a failure signal in your build pipeline.
 
 ## Development
 
-**Setup**
+To contribute to the project, you can run the following commands for testing and documentation:
+
+First, ensure you have the latest version of `pip`:
 
 ```bash
 python -m pip install --upgrade pip
-pip install --group=test --group=lint
 ```
 
-**Run Tests**
+### Running Tests
 
 ```bash
-pytest tests/
-pytest --cov sphinxlinter
+pip install --group=test --upgrade # Install test dependencies, skip if already installed
+python -m pytest tests/ # Run all tests
+python -m pytest tests/ --cov sphinxlinter # Run tests with coverage
 ```
 
-**Run Linter**
+### Running Linter
 
 ```bash
-ruff check .
+pip install --group=lint --upgrade  # Install lint dependencies, skip if already installed
+ruff check . # Run linter
 ```
-
----
 
 ## License
 
-Licensed under the [MIT License](LICENSE).
+This project is licensed under the [MIT license](LICENSE).
