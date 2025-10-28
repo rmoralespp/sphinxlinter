@@ -106,6 +106,8 @@ class ParsedDocs(typing.NamedTuple):
     docs_end_lineno: int | None  # End line number of the docstring, None if no docstring
     code_ini_lineno: int | None  # First line number of the code block after the docstring, None if no code
 
+    non_empty_end_lines: bool  # True if there are non-empty lines after the last section
+
 
 class Violations:
     # Rules definition:
@@ -127,6 +129,7 @@ class Violations:
     DOC009 = (True, "DOC009", "Docstring must not use more than 3 double quotes")
 
     DOC010 = (True, "DOC010", "Section definition contains invalid whitespace ({!r})")
+    DOC011 = (True, "DOC011", "Trailing non-empty lines after last section.")
 
     # DOC1xx: Parameter issues
     DOC101 = (True, "DOC101", "Parameter documented but not in signature ({!r})")
@@ -355,6 +358,9 @@ class Violations:
         yield from cls.validate_summary(parsed)
         yield from cls.validate_bad_whitespaces(parsed)
 
+        if parsed.non_empty_end_lines:
+            yield cls.DOC011, ()
+
         if parsed.kind == NodeTypes.FUNCTION:  # Only functions have parameters, returns, and raises
             yield from cls.validate_params(parsed, parameters)
             yield from cls.validate_return(parsed, parameters.get("return"), has_returns, is_implemented)
@@ -518,6 +524,7 @@ def parse_docs(node, /):
     is_class = kind == NodeTypes.CLASS
     is_module = kind == NodeTypes.MODULE
 
+    section_key, b_raw = (None, None)  # Initialize for misplaced_tail_text check
     for order, section in enumerate(itersections(docs)):
         a_raw, sep, b_raw = section.lstrip(":").partition(":")
         sep = bool(sep)  # True if ':' was present
@@ -551,6 +558,11 @@ def parse_docs(node, /):
         elif section_key not in invalid:
             invalid.append(section_key)
 
+    non_empty_end_lines = False
+    if section_key in types_set and len(b_raw.splitlines()) > 1:
+        # Check for non-empty lines after the last section. (Only for type sections that cannot have a description)
+        non_empty_end_lines = any(line.strip() for line in b_raw.splitlines()[1:])  # Non-empty lines
+
     if docs:
         summary = get_summary(docs)
         first = node.body[0]
@@ -576,6 +588,7 @@ def parse_docs(node, /):
         invalid=invalid,
         ignored=ignored,
         bad_whitespaces_def=bad_whitespaces_def,
+        non_empty_end_lines=non_empty_end_lines,
     )
 
 

@@ -1,5 +1,7 @@
 ## Releases
 
+- **Added:** `DOC011` Trailing non-empty lines after last section
+
 ### v0.0.12 (2025-10-24)
 
 - **Added:** `DOC010` Section definition contains invalid whitespace

@@ -366,31 +366,31 @@ def foo():
 @pytest.mark.parametrize("section, expected_section", [
     # param type
     (":type  a: str", ":type  a: str"),  # consecutive spaces between type and name
-    (": type a: str", ": type a: str"),   # leading space before type keyword
-    (":type a : str", ":type a : str"),   # trailing space after name
-    (":type a:  str", ":type a:  str"),   # leading space before type hint
-    (":type  a:  str", ":type  a:  str"),   # consecutive spaces both sides
+    (": type a: str", ": type a: str"),  # leading space before type keyword
+    (":type a : str", ":type a : str"),  # trailing space after name
+    (":type a:  str", ":type a:  str"),  # leading space before type hint
+    (":type  a:  str", ":type  a:  str"),  # consecutive spaces both sides
     # param
-    (":param  str  a: description", ":param  str  a:"),   # consecutive spaces
-    (": param str a: description", ": param str a:"),   # leading space before param keyword
-    (":param str a : description", ":param str a :"),   # trailing space after name
-    (":param  str a: description", ":param  str a:"),   # leading space before type hint
-    (":param str  a: description", ":param str  a:"),   # leading space before name
+    (":param  str  a: description", ":param  str  a:"),  # consecutive spaces
+    (": param str a: description", ": param str a:"),  # leading space before param keyword
+    (":param str a : description", ":param str a :"),  # trailing space after name
+    (":param  str a: description", ":param  str a:"),  # leading space before type hint
+    (":param str  a: description", ":param str  a:"),  # leading space before name
     # return
-    (": return: description", ": return:"),   # leading space before return keyword
-    (":return : description", ":return :"),   # trailing space after return keyword
+    (": return: description", ": return:"),  # leading space before return keyword
+    (":return : description", ":return :"),  # trailing space after return keyword
     # # rtype
-    (": rtype: int", ": rtype: int"),   # leading space before rtype keyword
-    (":rtype : int", ":rtype : int"),   # trailing space after rtype keyword
-    (":rtype:  int", ":rtype:  int"),    # leading space before type hint
-    (": rtype :  int", ": rtype :  int"),   # leading and trailing space both sides
+    (": rtype: int", ": rtype: int"),  # leading space before rtype keyword
+    (":rtype : int", ":rtype : int"),  # trailing space after rtype keyword
+    (":rtype:  int", ":rtype:  int"),  # leading space before type hint
+    (": rtype :  int", ": rtype :  int"),  # leading and trailing space both sides
     # # raises
-    (": raises ValueError: description", ": raises ValueError:"),   # leading ws before raises keyword
-    (":raises  ValueError: description", ":raises  ValueError:"),   # consecutive ws after raises keyword
-    (":raises ValueError : description", ":raises ValueError :"),   # trailing ws after error
-    (":raises ValueError,  KeyError: description", ":raises ValueError,  KeyError:"),   # Consecutive ws after comma
-    (":raises ValueError, KeyError : description", ":raises ValueError, KeyError :"),   # trailing ws after last error
-    (":raises ValueError  , KeyError: description", ":raises ValueError  , KeyError:"),   # leading ws before comma
+    (": raises ValueError: description", ": raises ValueError:"),  # leading ws before raises keyword
+    (":raises  ValueError: description", ":raises  ValueError:"),  # consecutive ws after raises keyword
+    (":raises ValueError : description", ":raises ValueError :"),  # trailing ws after error
+    (":raises ValueError,  KeyError: description", ":raises ValueError,  KeyError:"),  # Consecutive ws after comma
+    (":raises ValueError, KeyError : description", ":raises ValueError, KeyError :"),  # trailing ws after last error
+    (":raises ValueError  , KeyError: description", ":raises ValueError  , KeyError:"),  # leading ws before comma
 ])
 def test_DOC010_function(section, violations, expected_section):
     content = f'''
@@ -481,6 +481,37 @@ class Foo:
     pass
 '''
     expected = ()
+    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    assert result == expected
+
+
+def test_DOC011_function(violations):
+    content = '''
+def foo():
+    """
+    Title.
+
+    :rtype: int
+    Trailing description.
+    """
+    '''
+
+    expected = ((3, 'DOC011', 'Trailing non-empty lines after last section.', ()),)
+    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    assert result == expected
+
+
+def test_DOC011_class(violations):
+    content = '''
+class Foo:
+    """
+    Title.
+
+    :vartype a: int
+    Trailing description.
+    """
+    '''
+    expected = ((3, 'DOC011', 'Trailing non-empty lines after last section.', ()),)
     result = tuple(sphinxlinter.checker(parse_content(content), violations))
     assert result == expected
 

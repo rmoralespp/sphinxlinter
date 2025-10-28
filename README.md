@@ -136,6 +136,7 @@ path/to/file.py:LINE-NUMBER: [CODE] Description of the violation.
 | DOC008 | One-line docstring should end with a period      | Complies with [PEP 257](https://peps.python.org/pep-0257/#one-line-docstrings). |
 | DOC009 | Docstring must not use more than 3 double quotes | Promotes consistent quoting.                                                    |
 | DOC010 | Section definition contains invalid whitespace   | Ensures proper formatting.                                                      |
+| DOC011 | Trailing non-empty lines after last section      | Maintains clean endings.                                                        |
 
 ---
 
