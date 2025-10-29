@@ -1,5 +1,7 @@
 ## Releases
 
+### v0.0.13 (2025-10-29)
+
 - **Added:** `DOC011` Trailing non-empty lines after last section
 
 ### v0.0.12 (2025-10-24)
