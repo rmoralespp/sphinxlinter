@@ -1,5 +1,6 @@
-# sphinx-linter
+# sphinxlinter
 
+[![GitHub tag](https://img.shields.io/github/tag/rmoralespp/sphinxlinter?include_prereleases=&sort=semver&color=black)](https://github.com/rmoralespp/sphinxlinter/releases/)
 [![PyPI](https://img.shields.io/pypi/v/sphinx-linter.svg)](https://pypi.python.org/pypi/sphinx-linter)
 [![CI](https://github.com/rmoralespp/sphinxlinter/workflows/CI/badge.svg)](https://github.com/rmoralespp/sphinxlinter/actions?query=event%3Arelease+workflow%3ACI)
 [![codecov](https://codecov.io/gh/rmoralespp/sphinxlinter/branch/main/graph/badge.svg)](https://app.codecov.io/gh/rmoralespp/sphinxlinter)
@@ -15,7 +16,7 @@ It validates structure, field consistency, and alignment between documentation a
 Sphinx-style docstrings are widely used across Python projects, but existing tools such as
 [pydocstyle](https://www.pydocstyle.org), [pydoclint](https://jsh9.github.io/pydoclint/),
 and [ruff](https://docs.astral.sh/ruff/) focus primarily on general docstring formatting,
-**[PEP257](https://peps.python.org/pep-0257)** compliance,
+[PEP257](https://peps.python.org/pep-0257) compliance,
 and style enforcement.
 
 It is designed to **complement**, not overlap with, these tools.  
@@ -35,7 +36,7 @@ Specifically, it focuses on:
 
 ---
 
-## Installation
+## 📦 Installation
 
 Requires **Python ≥ 3.9**.
 
@@ -47,7 +48,7 @@ pip install sphinx-linter
 
 ---
 
-## Quick Start
+## ⚡ Quick Start
 
 ### CLI Tool
 
@@ -214,7 +215,7 @@ Treat any output as a failure signal in your build pipeline.
 
 ---
 
-## Development
+## 🛠️ Development
 
 To contribute to the project, you can run the following commands for testing and documentation:
 
@@ -239,6 +240,6 @@ pip install --group=lint --upgrade  # Install lint dependencies, skip if already
 ruff check . # Run linter
 ```
 
-## License
+## 🗒️ License
 
 This project is licensed under the [MIT license](LICENSE).
