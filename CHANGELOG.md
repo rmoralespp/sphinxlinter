@@ -2,9 +2,9 @@
 
 ### v0.0.14 (2025-10-30)
 
+- **Added:** Badge for GitHub tag in `README.md` to show latest release version.
 - **Changed:** Expanded default ignored directories in `--ignore` option.
-- **Changed:** Coverage configuration (Now it measures branch coverage (conditions) and shows the lines that
-  are not covered)
+- **Changed:** Coverage config (Now it measures branch coverage (conditions) and shows the lines that are not covered)
 
 ### v0.0.13 (2025-10-29)
 
