@@ -14,6 +14,9 @@ import sys
 import typing
 import warnings
 
+# Ignore, at least, these directory basenames (default directories to ignore).
+default_ignore_dirs = (".venv", ".env", ".git", ".hg", ".pytest_cache", ".ruff_cache", "__pycache__")
+
 # Docstring sections: https://www.sphinx-doc.org/en/master/usage/domains/python.html#info-field-lists
 ptype_key = "type"
 rtype_key = "rtype"
@@ -815,8 +818,8 @@ def main():
     parser.add_argument(
         "--ignore",
         nargs=argparse.ZERO_OR_MORE,
-        default=[".venv", ".env"],
-        help="directories to ignore",
+        default=default_ignore_dirs,
+        help="directories to ignore. Defaults to: {}".format(", ".join(default_ignore_dirs)),
     )
     parser.add_argument(
         "--enable",

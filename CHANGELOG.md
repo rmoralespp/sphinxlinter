@@ -1,5 +1,8 @@
 ## Releases
 
+### v0.0.14 (2025-10-30)
+
+- **Changed:** Expanded default ignored directories in `--ignore` option.
 - **Changed:** Coverage configuration (Now it measures branch coverage (conditions) and shows the lines that
   are not covered)
 
