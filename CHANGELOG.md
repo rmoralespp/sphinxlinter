@@ -1,5 +1,8 @@
 ## Releases
 
+- **Changed:** Coverage configuration (Now it measures branch coverage (conditions) and shows the lines that
+  are not covered)
+
 ### v0.0.13 (2025-10-29)
 
 - **Added:** `DOC011` Trailing non-empty lines after last section

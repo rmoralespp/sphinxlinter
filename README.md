@@ -229,7 +229,7 @@ python -m pip install --upgrade pip
 ```bash
 pip install --group=test --upgrade # Install test dependencies, skip if already installed
 python -m pytest tests/ # Run all tests
-python -m pytest tests/ --cov sphinxlinter # Run tests with coverage
+python -m pytest tests/ --cov # Run tests with coverage
 ```
 
 ### Running Linter

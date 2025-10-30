@@ -33,8 +33,7 @@ jobs:
           pip install --group=test
           pip install build
       - name: Test with pytest
-        run: |
-          pytest
+        run: python -m pytest tests/
       - name: Build package
         run: python -m build
       - name: Publish to PyPI

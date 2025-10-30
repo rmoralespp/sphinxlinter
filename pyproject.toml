@@ -31,6 +31,9 @@ Homepage = "https://github.com/rmoralespp/sphinxlinter"
 Changelog = "https://github.com/rmoralespp/sphinxlinter/blob/main/CHANGELOG.md"
 Issues = "https://github.com/rmoralespp/sphinxlinter/issues"
 
+[project.scripts]
+sphinxlinter = "sphinxlinter:main"
+spxl = "sphinxlinter:main"  # Alias for convenience
 
 [dependency-groups]
 test = [
@@ -41,6 +44,17 @@ test = [
 
 lint = [
     "ruff",
+]
+
+[tool.coverage.run]
+branch = true
+
+[tool.coverage.report]
+skip_empty = true
+skip_covered = true
+show_missing = true
+exclude_also = [
+  "if __name__ == .__main__.",
 ]
 
 [tool.ruff]
@@ -154,7 +168,3 @@ ignore = [
     "PT011", # `pytest.raises(ValueError)` is too broad, set the `match` parameter or use a more specific exception
     "PT019", # Fixture `_` without value is injected as parameter, use `@pytest.mark.usefixtures` instead
 ]
-
-[project.scripts]
-sphinxlinter = "sphinxlinter:main"
-spxl = "sphinxlinter:main"  # Alias for convenience
