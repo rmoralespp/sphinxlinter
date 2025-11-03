@@ -108,8 +108,7 @@ class ParsedDocs(typing.NamedTuple):
     docs: str | None  # Cleaned docstring (inspect.cleandoc)
     docs_ini_lineno: int | None  # First line number of the docstring, None if no docstring
     docs_end_lineno: int | None  # End line number of the docstring, None if no docstring
-    code_ini_lineno: int | None  # First line number of the code or comment after the docstring.
-
+    missing_blank_line_after: bool  # True if missing blank line after docstring
     non_empty_end_lines: bool  # True if there are non-empty lines after the last section
 
 
@@ -191,8 +190,10 @@ class Violations:
 
     @classmethod
     def validate_empty_lines(cls, parsed, /):
-        text = parsed.rawdocs
-        if text:
+        if parsed.missing_blank_line_after:
+            yield cls.DOC003, ()
+
+        if text := parsed.rawdocs:
             hits = empty_lines_regex.finditer(text)
             present = next(filter(None, hits), None)
             if present:
@@ -353,10 +354,7 @@ class Violations:
 
     @classmethod
     def discover_all(cls, parsed, parameters, has_returns, is_implemented, /):
-        if parsed.code_ini_lineno and parsed.docs_end_lineno and parsed.code_ini_lineno - parsed.docs_end_lineno == 1:
-            yield cls.DOC003, ()
         yield from ((cls.DOC001, (section_key,)) for section_key in parsed.invalid)
-
         yield from cls.validate_empty_lines(parsed)
         yield from cls.validate_head_tail_quotes(parsed)
         yield from cls.validate_summary(parsed)
@@ -575,12 +573,12 @@ def parse_docs(node, filename, /):
         summary = None
         docs_ini_lineno = docs_end_lineno = None
 
-    code_ini_lineno = None
     if docs_end_lineno:
         after_lineno = docs_end_lineno + 1
         after_line = linecache.getline(filename, after_lineno)
-        if after_line.strip() != "":  # Non-empty line after docstring
-            code_ini_lineno = after_lineno
+        missing_blank_line_after = after_line.strip() != ""
+    else:
+        missing_blank_line_after = False
 
     return ParsedDocs(
         kind=kind,
@@ -589,7 +587,6 @@ def parse_docs(node, filename, /):
         docs=docs,
         docs_ini_lineno=docs_ini_lineno,
         docs_end_lineno=docs_end_lineno,
-        code_ini_lineno=code_ini_lineno,
         params=params,
         returns=returns,
         raises=raises,
@@ -597,6 +594,7 @@ def parse_docs(node, filename, /):
         invalid=invalid,
         ignored=ignored,
         bad_whitespaces_def=bad_whitespaces_def,
+        missing_blank_line_after=missing_blank_line_after,
         non_empty_end_lines=non_empty_end_lines,
     )
 

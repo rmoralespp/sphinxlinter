@@ -75,7 +75,7 @@ def dummy():
             docs=None,
             docs_ini_lineno=None,
             docs_end_lineno=None,
-            code_ini_lineno=0,
+            missing_blank_line_after=False,
         )
         result = tuple(sphinxlinter.Violations.validate_empty_lines(parsed))
         assert not result
@@ -114,7 +114,7 @@ def dummy():
             docs=None,
             docs_ini_lineno=None,
             docs_end_lineno=None,
-            code_ini_lineno=None,
+            missing_blank_line_after=False,
         )
         result = sphinxlinter.parse_docs(ast.parse(content).body[0], "dummy.py")
         assert result == expected
