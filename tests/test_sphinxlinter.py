@@ -53,7 +53,7 @@ def dummy():
     pass
 '''
 
-        parsed = sphinxlinter.parse_docs(ast.parse(content).body[0])
+        parsed = sphinxlinter.parse_docs(ast.parse(content).body[0], "dummy.py")
         result = tuple(sphinxlinter.Violations.validate_summary(parsed))
         assert not result
 
@@ -114,9 +114,9 @@ def dummy():
             docs=None,
             docs_ini_lineno=None,
             docs_end_lineno=None,
-            code_ini_lineno=3,
+            code_ini_lineno=None,
         )
-        result = sphinxlinter.parse_docs(ast.parse(content).body[0])
+        result = sphinxlinter.parse_docs(ast.parse(content).body[0], "dummy.py")
         assert result == expected
 
     @pytest.mark.parametrize("quiet", (False, True))
@@ -167,9 +167,9 @@ def dummy():
         violations = object()
         lines = tuple()
         with unittest.mock.patch("sphinxlinter.checker", return_value=lines) as checker:
-            result = tuple(sphinxlinter.check_node(node, violations))
+            result = tuple(sphinxlinter.check_node(node, violations, "dummy.py"))
 
-        checker.assert_called_once_with(node, violations)
+        checker.assert_called_once_with(node, violations, "dummy.py")
         assert not result
 
     def test_check_node_warnings(self):
@@ -187,9 +187,9 @@ def dummy():
         with (
             unittest.mock.patch("sphinxlinter.checker", return_value=lines) as checker,
         ):
-            result = tuple(sphinxlinter.check_node(node, violations))
+            result = tuple(sphinxlinter.check_node(node, violations, "dummy.py"))
 
-        checker.assert_called_once_with(node, violations)
+        checker.assert_called_once_with(node, violations, "dummy.py")
         assert result == expected
 
     @pytest.mark.parametrize("value", ("ALL", ("ALL", "FOO")))

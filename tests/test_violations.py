@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import ast
+import unittest.mock
 
 import pytest
 
@@ -16,6 +17,12 @@ def violations():
     return sphinxlinter.Violations()
 
 
+def chequer(content, violations, next_line=""):
+    with unittest.mock.patch.object(sphinxlinter.linecache, 'getline') as mock_getline:
+        mock_getline.return_value = next_line
+        yield from sphinxlinter.checker(parse_content(content), violations, 'dummy.py')
+
+
 def test_empty(violations):
     content = '''
 def foo():
@@ -23,7 +30,7 @@ def foo():
 
     pass
 '''
-    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    result = tuple(chequer(content, violations))
     assert not result
 
 
@@ -36,7 +43,7 @@ def foo():
 
     pass
 '''
-    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    result = tuple(chequer(content, violations))
     assert not result
 
 
@@ -64,7 +71,7 @@ def foo():
         (3, 'DOC001', 'Invalid docstring section ({!r})', ('cvar',)),
         (3, 'DOC001', 'Invalid docstring section ({!r})', ('vartype',)),
     )
-    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    result = tuple(chequer(content, violations))
     assert result == expected
 
 
@@ -83,7 +90,7 @@ def foo():
     expected = (
         (3, "DOC001", "Invalid docstring section ({!r})", ("foo",)),
     )
-    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    result = tuple(chequer(content, violations))
     assert result == expected
 
 
@@ -109,7 +116,7 @@ class Foo:
         (3, 'DOC001', 'Invalid docstring section ({!r})', ('rtype',)),
         (3, 'DOC001', 'Invalid docstring section ({!r})', ('var',)),
     )
-    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    result = tuple(chequer(content, violations))
     assert result == expected
 
 
@@ -125,7 +132,7 @@ def foo():
 
     pass
 '''
-    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    result = tuple(chequer(content, violations))
     assert not result
 
 
@@ -170,7 +177,7 @@ def foo(a):
     expected = (
         (3, "DOC002", "Malformed section ({!r})", (section,)),
     )
-    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    result = tuple(chequer(content, violations))
     assert result == expected
 
 
@@ -206,23 +213,38 @@ class Foo:
     expected = (
         (3, "DOC002", "Malformed section ({!r})", (section,)),
     )
-    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    result = tuple(chequer(content, violations))
     assert result == expected
 
 
-def test_DOC003(violations):
+@pytest.mark.parametrize("next_line", ["pass", "# comment"])
+def test_DOC003(violations, next_line):
     content = '''
 def foo():
     """
     Title.
     """
-    pass
+    {next_line}
 '''
     expected = (
         (3, "DOC003", "Missing blank line after docstring", tuple()),
     )
-    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    result = tuple(chequer(content, violations, next_line=next_line))
     assert result == expected
+
+
+@pytest.mark.parametrize("next_line", ["", "\n"])
+def test_DOC003_ignore(violations, next_line):
+    content = '''
+def foo():
+    """
+    Title.
+    """
+'''
+    expected = ()
+    result = tuple(chequer(content, violations, next_line=next_line))
+    assert result == expected
+
 
 
 def test_DOC004(violations):
@@ -238,7 +260,7 @@ def foo(a):
     expected = (
         (3, "DOC004", "Missing blank line between summary and sections", ()),
     )
-    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    result = tuple(chequer(content, violations))
     assert result == expected
 
 
@@ -258,7 +280,7 @@ def foo(a):
     expected = (
         (3, "DOC005", "Too many consecutive blank lines", ()),
     )
-    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    result = tuple(chequer(content, violations))
     assert result == expected
 
 
@@ -278,7 +300,7 @@ def foo(a):
     expected = (
         (3, "DOC006", "Trailing empty lines", ()),
     )
-    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    result = tuple(chequer(content, violations))
     assert result == expected
 
 
@@ -293,7 +315,7 @@ def foo():
     expected = (
         (3, "DOC006", "Trailing empty lines", ()),
     )
-    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    result = tuple(chequer(content, violations))
     assert result == expected
 
 
@@ -307,7 +329,7 @@ def foo(a):
     expected = (
         (3, "DOC008", "One-line docstring should end with a period", ()),
     )
-    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    result = tuple(chequer(content, violations))
     assert result == expected
 
 
@@ -325,7 +347,7 @@ def foo(a):
 '''
 
     expected = ()
-    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    result = tuple(chequer(content, violations))
     assert result == expected
 
 
@@ -343,7 +365,7 @@ def foo():
 
     expected = ((3, 'DOC009', 'Docstring must not use more than 3 double quotes', ()),)
 
-    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    result = tuple(chequer(content, violations))
     assert result == expected
 
 
@@ -359,7 +381,7 @@ def foo():
     pass
 '''
     expected = ()
-    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    result = tuple(chequer(content, violations))
     assert result == expected
 
 
@@ -406,7 +428,7 @@ def foo(a):
     expected = (
         (3, "DOC010", "Section definition contains invalid whitespace ({!r})", (expected_section,)),
     )
-    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    result = tuple(chequer(content, violations))
     assert result == expected
 
 
@@ -427,7 +449,7 @@ def foo(a):
     return a
 '''
     expected = ()
-    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    result = tuple(chequer(content, violations))
     assert result == expected
 
 
@@ -461,7 +483,7 @@ class Foo:
     expected = (
         (3, "DOC010", "Section definition contains invalid whitespace ({!r})", (expected_section,)),
     )
-    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    result = tuple(chequer(content, violations))
     assert result == expected
 
 
@@ -481,7 +503,7 @@ class Foo:
     pass
 '''
     expected = ()
-    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    result = tuple(chequer(content, violations))
     assert result == expected
 
 
@@ -497,7 +519,7 @@ def foo():
     '''
 
     expected = ((3, 'DOC011', 'Trailing non-empty lines after last section.', ()),)
-    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    result = tuple(chequer(content, violations))
     assert result == expected
 
 
@@ -512,7 +534,7 @@ class Foo:
     """
     '''
     expected = ((3, 'DOC011', 'Trailing non-empty lines after last section.', ()),)
-    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    result = tuple(chequer(content, violations))
     assert result == expected
 
 
@@ -530,7 +552,7 @@ def foo():
     expected = (
         (3, "DOC101", "Parameter documented but not in signature ({!r})", ("a",)),
     )
-    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    result = tuple(chequer(content, violations))
     assert result == expected
 
 
@@ -548,7 +570,7 @@ def foo(a):
     expected = (
         ((3, "DOC102", "Invalid parameter type syntax ({!r})", ("list[str,",)),)
     )
-    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    result = tuple(chequer(content, violations))
     assert result == expected
 
 
@@ -566,7 +588,7 @@ def foo(a:int):
     expected = (
         ((3, "DOC103", "Parameter type already in signature ({!r})", ("int",)),)
     )
-    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    result = tuple(chequer(content, violations))
     assert result == expected
 
 
@@ -589,7 +611,7 @@ def foo(a:int):
             ("str", "int"),
         ),
     )
-    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    result = tuple(chequer(content, violations))
     assert result == expected
 
 
@@ -609,7 +631,7 @@ def foo(a):
     expected = (
         (3, "DOC105", "Duplicated parameter ({!r})", ("a",)),
     )
-    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    result = tuple(chequer(content, violations))
     assert result == expected
 
 
@@ -629,7 +651,7 @@ def foo(a, b):
     expected = (
         (3, 'DOC007', 'Misplaced section ({!r} appears after {!r})', ('param', 'raises',)),
     )
-    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    result = tuple(chequer(content, violations))
     assert result == expected
 
 
@@ -652,7 +674,7 @@ def foo(a, b, c):
         (3, 'DOC007', 'Misplaced section ({!r} appears after {!r})', ('type', 'raises')),
         (3, 'DOC007', 'Misplaced section ({!r} appears after {!r})', ('type', 'return')),
     )
-    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    result = tuple(chequer(content, violations))
     assert result == expected
 
 
@@ -672,7 +694,7 @@ def foo():
     expected = (
         (3, "DOC201", "Return documented but function has no return statement", ()),
     )
-    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    result = tuple(chequer(content, violations))
     assert result == expected
 
 
@@ -691,7 +713,7 @@ def foo():
     expected = (
         (3, "DOC202", "Invalid return type syntax ({!r})", ("list[int,",)),
     )
-    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    result = tuple(chequer(content, violations))
     assert result == expected
 
 
@@ -710,7 +732,7 @@ def foo() -> int:
     expected = (
         ((3, "DOC203", "Return type already in signature ({!r})", ("int",)),)
     )
-    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    result = tuple(chequer(content, violations))
     assert result == expected
 
 
@@ -729,7 +751,7 @@ def foo() -> int:
     expected = (
         (3, "DOC204", "Return type mismatch with annotation ({!r} != {!r})", ("str", "int")),
     )
-    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    result = tuple(chequer(content, violations))
     assert result == expected
 
 
@@ -750,7 +772,7 @@ def foo():
     expected = (
         ((3, "DOC205", "Duplicated return section ({!r})", (key,)),)
     )
-    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    result = tuple(chequer(content, violations))
     assert result == expected
 
 
@@ -769,7 +791,7 @@ def foo():
     expected = (
         ((3, "DOC302", "Invalid exception type syntax ({!r})", (True,)),)
     )
-    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    result = tuple(chequer(content, violations))
     assert result == expected
 
 
@@ -789,7 +811,7 @@ def foo():
     expected = (
         ((3, "DOC305", "Duplicated exception type ({!r})", ("ValueError",)),)
     )
-    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    result = tuple(chequer(content, violations))
     assert result == expected
 
 
@@ -810,7 +832,7 @@ def foo():
     expected = (
         (3, "DOC007", "Misplaced section ({!r} appears after {!r})", ('raises', return_key)),
     )
-    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    result = tuple(chequer(content, violations))
     assert result == expected
 
 
@@ -829,7 +851,7 @@ class Foo:
     expected = (
         ((3, 'DOC402', 'Invalid variable type syntax ({!r})', ('list[str,',)),)
     )
-    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    result = tuple(chequer(content, violations))
     assert result == expected
 
 
@@ -850,7 +872,7 @@ class Foo:
     pass
 '''
     expected = ((3, 'DOC403', 'Variable name contains invalid whitespace ({!r})', ('foo bar',)),)
-    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    result = tuple(chequer(content, violations))
     assert result == expected
 
 
@@ -867,5 +889,5 @@ class Foo:
     pass
 '''
     expected = ((3, 'DOC405', 'Duplicated variable ({!r})', ('bar',)),)
-    result = tuple(sphinxlinter.checker(parse_content(content), violations))
+    result = tuple(chequer(content, violations))
     assert result == expected

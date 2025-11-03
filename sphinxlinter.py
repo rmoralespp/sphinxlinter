@@ -5,6 +5,7 @@ import ast
 import collections
 import inspect
 import itertools
+import linecache
 import logging
 import operator
 import os.path
@@ -107,7 +108,7 @@ class ParsedDocs(typing.NamedTuple):
     docs: str | None  # Cleaned docstring (inspect.cleandoc)
     docs_ini_lineno: int | None  # First line number of the docstring, None if no docstring
     docs_end_lineno: int | None  # End line number of the docstring, None if no docstring
-    code_ini_lineno: int | None  # First line number of the code block after the docstring, None if no code
+    code_ini_lineno: int | None  # First line number of the code or comment after the docstring.
 
     non_empty_end_lines: bool  # True if there are non-empty lines after the last section
 
@@ -508,7 +509,7 @@ def fetch_bad_ws_definitions(section, section_key, sep, a_raw, b_raw, /):
         yield ":{}{}".format(a_raw, ":" if sep else "")
 
 
-def parse_docs(node, /):
+def parse_docs(node, filename, /):
     params = list()
     raises = list()
     returns = list()
@@ -570,11 +571,16 @@ def parse_docs(node, /):
         summary = get_summary(docs)
         first = node.body[0]
         docs_ini_lineno, docs_end_lineno = (first.lineno, first.end_lineno)
-        code_ini_lineno = node.body[1].lineno if len(node.body) > 1 else None
     else:
         summary = None
         docs_ini_lineno = docs_end_lineno = None
-        code_ini_lineno = node.body[0].lineno if node.body else None
+
+    code_ini_lineno = None
+    if docs_end_lineno:
+        after_lineno = docs_end_lineno + 1
+        after_line = linecache.getline(filename, after_lineno)
+        if after_line.strip() != "":  # Non-empty line after docstring
+            code_ini_lineno = after_lineno
 
     return ParsedDocs(
         kind=kind,
@@ -667,9 +673,9 @@ def is_not_implemented(node, /, rawdocs=None):
             exc = stmt.exc
             error_name = NotImplementedError.__name__
             if (
-                    isinstance(exc, ast.Call)
-                    and isinstance(exc.func, ast.Name)
-                    and exc.func.id == error_name
+                isinstance(exc, ast.Call)
+                and isinstance(exc.func, ast.Name)
+                and exc.func.id == error_name
             ):
                 return True
 
@@ -682,18 +688,19 @@ def is_not_implemented(node, /, rawdocs=None):
             return False
 
 
-def checker(node, violations, /):
+def checker(node, violations, filename, /):
     """
     Explore the given AST node and yield each violation found.
 
     :param ast.AST node: Root node to explore.
     :param Violations violations: Violations instance with enabled/disabled rules.
+    :param str filename: Filename to check.
 
     :return: Generator with data of each violation.
     :rtype: typing.Iterator[tuple[int, str, dict]]
     """
 
-    parsed = parse_docs(node)
+    parsed = parse_docs(node, filename)
     lineno = parsed.docs_ini_lineno
 
     if parsed.kind == "function":
@@ -723,8 +730,8 @@ def get_params(node, /):
         yield ("return", ast.unparse(node.returns))
 
 
-def check_node(node, violations, /):
-    for lineno, code, msg, ctx in checker(node, violations):
+def check_node(node, violations, filename, /):
+    for lineno, code, msg, ctx in checker(node, violations, filename):
         yield (lineno, code, msg.format(*ctx))
 
 
@@ -781,7 +788,7 @@ def dump_statistics(violations, /):
 def dump_file(violations, quiet, path, /):
     def worker(content):
         for node in walk_module(quiet, content, filename):
-            yield from check_node(node, violations)
+            yield from check_node(node, violations, filename)
 
     getter = operator.itemgetter(0)  # lineno
     filename = str(path)

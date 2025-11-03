@@ -1,5 +1,7 @@
 ## Releases
 
+- **Fixed:** Rule `DOC003` did not alert a warning when there was a comment after the docstring.
+
 ### v0.0.14 (2025-10-30)
 
 - **Added:** Badge for GitHub tag in `README.md` to show latest release version.
