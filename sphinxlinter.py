@@ -575,6 +575,7 @@ def parse_docs(node, filename, /):
 
     if docs_end_lineno:
         after_lineno = docs_end_lineno + 1
+        # Use linecache instead of ast to get the next line after the docstring correctly, because ast skips comments.
         after_line = linecache.getline(filename, after_lineno)
         missing_blank_line_after = after_line.strip() != ""
     else:
