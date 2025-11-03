@@ -1,5 +1,7 @@
 ## Releases
 
+### v0.0.15 (2025-11-03)
+
 - **Fixed:** Rule `DOC003` did not alert a warning when there was a comment after the docstring.
 
 ### v0.0.14 (2025-10-30)
