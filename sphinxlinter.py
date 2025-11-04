@@ -45,7 +45,7 @@ section_regex = re.compile(r'(^:.*?)(?=^:|\Z)', flags=re.DOTALL | re.MULTILINE)
 # Trailing empty lines
 trailing_regex = re.compile("(?:^\\s*$){2,}\\Z", flags=re.MULTILINE)
 # Consecutive empty lines (not at end)
-empty_lines_regex = re.compile("(?:^[ \t]*\r?\n){2,}(?=[^\r\n])", re.MULTILINE)
+empty_lines_regex = re.compile("(?:^[ \t]*\r?\n){2,}(?=[^\r\n])", flags=re.MULTILINE)
 # Docstring starting or ending with only quotes lines
 quotes_starts_regex = re.compile(r'^"+\s*$')
 quotes_ends_regex = re.compile(r'^\s*"+$')
@@ -307,7 +307,11 @@ class Violations:
             # Duplicate return section
             if section_key in bag:
                 yield cls.DOC205, (section_key,)  # Duplicate return section
-            bag.add(section_key)
+
+            if section_key in return_set:
+                bag.update(return_set)  # Mark all return section as used to avoid duplicates (:return: & :returns:)
+            else:
+                bag.add(section_key)
 
     @classmethod
     def validate_raises(cls, parsed, /):

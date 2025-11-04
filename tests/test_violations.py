@@ -755,7 +755,11 @@ def foo() -> int:
     assert result == expected
 
 
-@pytest.mark.parametrize("key, repeated", [("rtype", ":rtype: int"), ("return", ":return: description)")])
+@pytest.mark.parametrize("key, repeated", [
+    ("rtype", ":rtype: int"),
+    ("return", ":return: description)"),
+    ("returns", ":returns: description)"),
+])
 def test_DOC205(key, repeated, violations):
     content = f'''
 def foo():

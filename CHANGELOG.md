@@ -1,5 +1,9 @@
 ## Releases
 
+- **Changed:** Internal refactoring to improve `DOC003` management.
+- **Fixed:** Rule `DOC205` did not alert a warning when there was a duplicate section with different names (`:returns:`
+  and `:return:`).
+
 ### v0.0.15 (2025-11-03)
 
 - **Fixed:** Rule `DOC003` did not alert a warning when there was a comment after the docstring.
