@@ -62,9 +62,6 @@ line-length = 120
 
 [tool.ruff.lint]
 select = [
-    # Airflow
-    "AIR",
-
     # pyflakes
     "F",
 
@@ -153,8 +150,6 @@ ignore = [
     "C400", # Unnecessary `tuple` call (rewrite as a literal)
     "C401", # Unnecessary generator (rewrite as a set comprehension)
     "C408", # Unnecessary `dict` call (rewrite as a literal)
-
-    "ICN001",  # 'xml.etree.ElementTree should be imported as 'ET'
 
     "PLC0207", # Accessing only the first or last element of `str.split()` without setting `maxsplit=1`
     "PLC0415", # `import` should be at the top-level of a file
