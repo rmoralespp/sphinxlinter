@@ -688,9 +688,9 @@ def is_not_implemented(node, /, rawdocs=None):
             exc = stmt.exc
             error_name = NotImplementedError.__name__
             if (
-                    isinstance(exc, ast.Call)
-                    and isinstance(exc.func, ast.Name)
-                    and exc.func.id == error_name
+                isinstance(exc, ast.Call)
+                and isinstance(exc.func, ast.Name)
+                and exc.func.id == error_name
             ):
                 return True
 
