@@ -1,5 +1,6 @@
 ## Releases
 
+- **Changed:** Added default ignored directories to `--ignore` option. (`env`, `venv`)
 - **Changed:** Internal refactoring to improve `DOC003` management.
 - **Fixed:** Rule `DOC205` did not alert a warning when there was a duplicate section with different names (`:returns:`
   and `:return:`).

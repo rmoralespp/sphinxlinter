@@ -16,7 +16,19 @@ import typing
 import warnings
 
 # Ignore, at least, these directory basenames (default directories to ignore).
-default_ignore_dirs = (".venv", ".env", ".git", ".hg", ".pytest_cache", ".ruff_cache", "__pycache__")
+default_ignore_dirs = (
+    # Common virtual environment directories
+    "venv",
+    "env",
+    ".venv",
+    ".env",
+    # Common build directories
+    ".git",  # Git
+    ".hg",  # Mercurial
+    ".pytest_cache",  # Pytest cache
+    ".ruff_cache",  # Ruff cache
+    "__pycache__",  # Python cache
+)
 
 # Docstring sections: https://www.sphinx-doc.org/en/master/usage/domains/python.html#info-field-lists
 ptype_key = "type"
@@ -676,9 +688,9 @@ def is_not_implemented(node, /, rawdocs=None):
             exc = stmt.exc
             error_name = NotImplementedError.__name__
             if (
-                isinstance(exc, ast.Call)
-                and isinstance(exc.func, ast.Name)
-                and exc.func.id == error_name
+                    isinstance(exc, ast.Call)
+                    and isinstance(exc.func, ast.Name)
+                    and exc.func.id == error_name
             ):
                 return True
 
