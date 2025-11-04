@@ -845,14 +845,14 @@ def main():
     parser.add_argument(
         "--enable",
         nargs=argparse.ZERO_OR_MORE,
-        type=str.upper,  # noqa
+        type=str.upper,
         default=[],
         help="Violation codes to enable (or ALL, to enable all)",
     )
     parser.add_argument(
         "--disable",
         nargs=argparse.ZERO_OR_MORE,
-        type=str.upper,  # noqa
+        type=str.upper,
         default=[],
         help="Violation codes to disable",
     )
