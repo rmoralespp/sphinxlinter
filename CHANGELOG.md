@@ -1,5 +1,7 @@
 ## Releases
 
+- **Fixed:** internal code warnings
+
 ### v0.0.16 (2025-11-04)
 
 - **Changed:** `CI` workflow to use `sphinxlinter.py` for repository python files linting.

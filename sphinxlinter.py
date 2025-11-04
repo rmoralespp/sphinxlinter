@@ -475,12 +475,12 @@ def parse_section_return(section_key, sep, parts_a, parts_b, order, /):
 
 def itersections(docstring, /):
     if docstring:
-        yield from (chunk.strip() for match in section_regex.finditer(docstring) if (chunk := match.group(0)))
+        yield from (chunk.strip() for match in section_regex.finditer(docstring) if (chunk := match.group()))
 
 
 def get_summary(docstring, /):
     if docstring and (match := summary_regex.match(docstring)):
-        return match.group(0)
+        return match.group()
     else:
         return None
 
@@ -622,8 +622,7 @@ def has_return_or_yield(node, /):
     contains a 'return', 'yield', or 'yield from' statement in its main body
     (excluding nested functions).
 
-    :param ast.FunctionDef | ast.AsyncFunctionDef node: Root node to explore.
-
+    :param ast.AST node: Root node to explore.
     :return: Whether the function has either "return" or "yield".
     :rtype: bool
     """
@@ -633,25 +632,25 @@ def has_return_or_yield(node, /):
             self.found = False
             self.depth = 0
 
-        def visit_nested(self, node, /):
+        def visit_nested(self, node_, /):
             if self.depth == 0:
                 self.depth += 1
-                self.generic_visit(node)
+                self.generic_visit(node_)
                 self.depth -= 1
 
-        def visit_FunctionDef(self, node, /):
-            self.visit_nested(node)
+        def visit_FunctionDef(self, node_, /):
+            self.visit_nested(node_)
 
-        def visit_AsyncFunctionDef(self, node, /):
-            self.visit_nested(node)
+        def visit_AsyncFunctionDef(self, node_, /):
+            self.visit_nested(node_)
 
-        def visit_Return(self, node, /):
+        def visit_Return(self, node_, /):
             self.found = True
 
-        def visit_Yield(self, node, /):
+        def visit_Yield(self, node_, /):
             self.found = True
 
-        def visit_YieldFrom(self, node, /):
+        def visit_YieldFrom(self, node_, /):
             self.found = True
 
     visitor = ReturnYieldVisitor()
@@ -668,7 +667,7 @@ def is_not_implemented(node, /, rawdocs=None):
       - `...` (Ellipsis literal)
     Otherwise, returns False.
 
-    :param ast.FunctionDef | ast.AsyncFunctionDef node: Root node to explore.
+    :param ast.AST node: Root node to explore.
     :param str | None rawdocs: Raw docstring.
 
     :rtype: bool
@@ -846,14 +845,14 @@ def main():
     parser.add_argument(
         "--enable",
         nargs=argparse.ZERO_OR_MORE,
-        type=str.upper,
+        type=str.upper,  # noqa
         default=[],
         help="Violation codes to enable (or ALL, to enable all)",
     )
     parser.add_argument(
         "--disable",
         nargs=argparse.ZERO_OR_MORE,
-        type=str.upper,
+        type=str.upper,  # noqa
         default=[],
         help="Violation codes to disable",
     )
