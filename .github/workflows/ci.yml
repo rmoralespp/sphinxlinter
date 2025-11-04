@@ -28,6 +28,8 @@ jobs:
           pip install --group=test --group=lint
       - name: Run Ruff linter
         run: ruff check --quiet --output-format=concise
+      - name: Run sphinxlinter
+        run: python sphinxlinter.py . --quiet
       - name: Run tests and collect coverage
         run: python -m pytest tests/ --cov
       - name: Upload coverage reports to Codecov
