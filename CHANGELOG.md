@@ -1,5 +1,7 @@
 ## Releases
 
+### v0.0.16 (2025-11-04)
+
 - **Changed:** `CI` workflow to use `sphinxlinter.py` for repository python files linting.
 - **Changed:** Added default ignored directories to `--ignore` option. (`env`, `venv`)
 - **Changed:** Internal refactoring to improve `DOC003` management.
