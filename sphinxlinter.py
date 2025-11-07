@@ -61,8 +61,30 @@ empty_lines_regex = re.compile("(?:^[ \t]*\r?\n){2,}(?=[^\r\n])", flags=re.MULTI
 # Docstring starting or ending with only quotes lines
 quotes_starts_regex = re.compile(r'^"+\s*$')
 quotes_ends_regex = re.compile(r'^\s*"+$')
-# Bad whitespace in section definition: (consecutive spaces or trailing space or leading space)
-section_bad_ws_regex = re.compile(r'(\s{2,}|^\s+|\s+$)')
+
+# ----------------------------------
+# Bad whitespace in section left-side:
+# ----------------------------------
+# - consecutive whitespace (anywhere)
+# - leading whitespace  (ignore break-line)
+# - trailing whitespace (ignore break-line)
+ws_left_err = re.compile('(\\s{2,}|^[ \t]+|[ \t]+$)').search
+
+# ----------------------------------
+# Bad whitespace in section right-side (type):
+# ----------------------------------
+# - consecutive whitespace (anywhere)
+# - missing leading whitespace (starts with non-space)
+# - trailing whitespace (ignore break-line)
+ws_right_type_err = re.compile('(\\s{2,}|^\\S|[ \t]+$)').search
+
+# ----------------------------------
+# Bad whitespace in section right-side (description):
+# ----------------------------------
+# - missing leading whitespace (starts with non-space)
+# - starts with 2+ whitespace (ignore break-line)
+# - trailing whitespace (ignore break-line)
+ws_right_desc_err = re.compile('(^\\S|^[ \t]{2,}|[ \t]+$)').search
 
 
 class NodeTypes:
@@ -288,7 +310,7 @@ class Violations:
         :param ParsedDocs parsed: Parsed docstring object.
         :param str | None sign_return_type: Return type from function signature.
         :param set[str] has_returns: True if the function has a return or yield statement.
-        :param bool is_implemented:  True if the function is implemented (not just a stub).
+        :param bool is_implemented: True if the function is implemented (not just a stub).
 
         :return: Generator yielding violation tuples.
         """
@@ -475,7 +497,7 @@ def parse_section_return(section_key, sep, parts_a, parts_b, order, /):
 
 def itersections(docstring, /):
     if docstring:
-        yield from (chunk.strip() for match in section_regex.finditer(docstring) if (chunk := match.group()))
+        yield from (chunk for match in section_regex.finditer(docstring) if (chunk := match.group()))
 
 
 def get_summary(docstring, /):
@@ -510,17 +532,16 @@ def fetch_bad_ws_definitions(section, section_key, sep, a_raw, b_raw, /):
     :return: Generator yielding section definitions with bad whitespaces.
     """
 
-    if section_key in types_set:  # Check both sides for type sections
-        # Get right side (after '') without leading spaces and split into lines
-        right_side_lines = b_raw.removeprefix(" ").splitlines()
-        # Only first line of right side is relevant.
-        right_side = right_side_lines[0] if right_side_lines else ""
-        if section_bad_ws_regex.search(a_raw) or section_bad_ws_regex.search(right_side):
-            yield section.splitlines()[0]  # Return only the section definition line
+    if section_key in types_set:
+        if ws_left_err(a_raw) or ws_right_type_err(b_raw):  # Check left-side and right-side type
+            yield section
 
-    elif section_bad_ws_regex.search(a_raw):  # Other sections only check left-side
+    elif ws_left_err(a_raw):
         # Reconstruct section definition with only left-side
         yield ":{}{}".format(a_raw, ":" if sep else "")
+
+    elif ws_right_desc_err(b_raw):  # Check right-side description
+        yield section
 
 
 def parse_docs(node, filename, /):
@@ -686,11 +707,7 @@ def is_not_implemented(node, /, rawdocs=None):
         elif isinstance(stmt, ast.Raise):  # Case: "raise NotImplementedError()"
             exc = stmt.exc
             error_name = NotImplementedError.__name__
-            if (
-                isinstance(exc, ast.Call)
-                and isinstance(exc.func, ast.Name)
-                and exc.func.id == error_name
-            ):
+            if isinstance(exc, ast.Call) and isinstance(exc.func, ast.Name) and exc.func.id == error_name:
                 return True
 
             else:  # Case: "raise NotImplementedError"
