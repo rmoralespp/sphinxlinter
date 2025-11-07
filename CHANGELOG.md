@@ -1,5 +1,7 @@
 ## Releases
 
+### v0.0.17 (2025-11-07)
+
 - **Changed:** The `DOC010` rule now detects (trailing whitespace and missing leading whitespace).
 - **Fixed:** internal code warnings
 
