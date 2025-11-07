@@ -73,10 +73,10 @@ ws_left_err = re.compile('(\\s{2,}|^[ \t]+|[ \t]+$)').search
 # ----------------------------------
 # Bad whitespace in section right-side (type):
 # ----------------------------------
-# - consecutive whitespace (anywhere)
 # - missing leading whitespace (starts with non-space)
+# - consecutive whitespace (anywhere)
 # - trailing whitespace (ignore break-line)
-ws_right_type_err = re.compile('(\\s{2,}|^\\S|[ \t]+$)').search
+ws_right_type_err = re.compile('(^\\S|\\s{2,}|[ \t]+$)').search
 
 # ----------------------------------
 # Bad whitespace in section right-side (description):
