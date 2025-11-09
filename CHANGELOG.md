@@ -1,5 +1,7 @@
 ## Releases
 
+- **Added:** Rule `DOC012` to check for leading in first non-blank line of docstring.
+
 ### v0.0.17 (2025-11-07)
 
 - **Changed:** The `DOC010` rule now detects (trailing whitespace and missing leading whitespace).
