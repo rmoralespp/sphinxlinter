@@ -438,9 +438,9 @@ def foo(a):
     ":return: foo  bar",
     ":raises ValueError: foo  bar",
     # starts with 2+ spaces but starting with newline
-    ":param str a: \n  foo bar",
-    ":return: \n  foo bar",
-    ":raises ValueError: \n  foo bar",
+    ":param str a: \n      foo bar",
+    ":return: \n      foo bar",
+    ":raises ValueError: \n      foo bar",
 ])
 def test_DOC010_function_ignoring_descriptions_ws(section, violations):
     content = f'''
@@ -503,8 +503,8 @@ class Foo:
     ":ivar a: foo   bar",
     ":cvar a: foo   bar",
     # starts with 2+ spaces but starting with newline
-    ":ivar a: \n  foo bar",
-    ":cvar a: \n  foo bar",
+    ":ivar a: \n      foo bar",
+    ":cvar a: \n      foo bar",
 ])
 def test_DOC010_class_ignoring_descriptions_ws(section, violations):
     content = f'''
@@ -533,7 +533,7 @@ def foo():
     """
     '''
 
-    expected = ((3, 'DOC011', 'Trailing non-empty lines after last section.', ()),)
+    expected = ((3, 'DOC011', 'Trailing non-empty lines after last section', ()),)
     result = tuple(chequer(content, violations))
     assert result == expected
 
@@ -548,7 +548,7 @@ class Foo:
     Trailing description.
     """
     '''
-    expected = ((3, 'DOC011', 'Trailing non-empty lines after last section.', ()),)
+    expected = ((3, 'DOC011', 'Trailing non-empty lines after last section', ()),)
     result = tuple(chequer(content, violations))
     assert result == expected
 
@@ -567,6 +567,57 @@ def foo():
     expected = (
         (3, "DOC101", "Parameter documented but not in signature ({!r})", ("a",)),
     )
+    result = tuple(chequer(content, violations))
+    assert result == expected
+
+
+def test_DOC012_multiline_docstring(violations):
+    content = '''
+def foo(a):
+    """
+     Title.
+
+    :param str a: description
+    """
+'''
+
+    expected = ((3, 'DOC012', 'Leading whitespaces in first non-blank line ({!r})', (' Title.',)),)
+    result = tuple(chequer(content, violations))
+    assert result == expected
+
+
+def test_DOC012_ignore_when_not_docstring(violations):
+    content = '''
+def foo(a):
+    pass
+'''
+
+    expected = ()
+    result = tuple(chequer(content, violations))
+    assert result == expected
+
+
+def test_DOC012_ignore_if_blank_docstring(violations):
+    content = '''
+def foo(a):
+    """  """
+'''
+
+    expected = ()
+    result = tuple(chequer(content, violations))
+    assert result == expected
+
+
+def test_DOC012_oneline_docstring(violations):
+    content = '''
+def foo(a):
+    """ Title.
+
+    :param str a: description
+    """
+'''
+
+    expected = ((3, 'DOC012', 'Leading whitespaces in first non-blank line ({!r})', (' Title.',)),)
     result = tuple(chequer(content, violations))
     assert result == expected
 

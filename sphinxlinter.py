@@ -54,13 +54,16 @@ types_set = {ptype_key, rtype_key, vartype_key}  # Sections that define types
 summary_regex = re.compile(r'^(.*?)(?=^:|\Z)', flags=re.DOTALL | re.MULTILINE)
 # Section (start with ':' and end before next ':' at start of line or end of string)
 section_regex = re.compile(r'(^:.*?)(?=^:|\Z)', flags=re.DOTALL | re.MULTILINE)
-# Trailing empty lines
+# Trailing blank lines
 trailing_regex = re.compile("(?:^\\s*$){2,}\\Z", flags=re.MULTILINE)
-# Consecutive empty lines (not at end)
-empty_lines_regex = re.compile("(?:^[ \t]*\r?\n){2,}(?=[^\r\n])", flags=re.MULTILINE)
+# Consecutive blank lines (not at end)
+blank_lines_regex = re.compile("(?:^[ \t]*\r?\n){2,}(?=[^\r\n])", flags=re.MULTILINE)
 # Docstring starting or ending with only quotes lines
 quotes_starts_regex = re.compile(r'^"+\s*$')
 quotes_ends_regex = re.compile(r'^\s*"+$')
+
+# leading whitespaces matcher (in first non-blank line of docstring)
+leading_whitespaces_regex = re.compile(r'^[ \t]+')
 
 # ----------------------------------
 # Bad whitespace in section left-side:
@@ -143,7 +146,7 @@ class ParsedDocs(typing.NamedTuple):
     docs_ini_lineno: int | None  # First line number of the docstring, None if no docstring
     docs_end_lineno: int | None  # End line number of the docstring, None if no docstring
     missing_blank_line_after: bool  # True if missing blank line after docstring
-    non_empty_end_lines: bool  # True if there are non-empty lines after the last section
+    non_blank_end_lines: bool  # True if there are non-blank lines after the last section
 
 
 class Violations:
@@ -166,7 +169,8 @@ class Violations:
     DOC009 = (True, "DOC009", "Docstring must not use more than 3 double quotes")
 
     DOC010 = (True, "DOC010", "Section definition contains invalid whitespace ({!r})")
-    DOC011 = (True, "DOC011", "Trailing non-empty lines after last section.")
+    DOC011 = (True, "DOC011", "Trailing non-empty lines after last section")
+    DOC012 = (True, "DOC012", "Leading whitespaces in first non-blank line ({!r})")
 
     # DOC1xx: Parameter issues
     DOC101 = (True, "DOC101", "Parameter documented but not in signature ({!r})")
@@ -223,12 +227,12 @@ class Violations:
         return cls.is_valid_syntax(f"x: {hint}", mode="exec") if hint else False
 
     @classmethod
-    def validate_empty_lines(cls, parsed, /):
+    def validate_blank_lines(cls, parsed, /):
         if parsed.missing_blank_line_after:
             yield cls.DOC003, ()
 
         if text := parsed.rawdocs:
-            hits = empty_lines_regex.finditer(text)
+            hits = blank_lines_regex.finditer(text)
             present = next(filter(None, hits), None)
             if present:
                 yield cls.DOC005, ()
@@ -241,13 +245,27 @@ class Violations:
                     # finditer: Empty matches are included in the result.
                     yield cls.DOC006, ()
 
+        if parsed.non_blank_end_lines:
+            yield cls.DOC011, ()
+
     @classmethod
-    def validate_bad_whitespaces(cls, parsed, /):
+    def validate_whitespaces(cls, parsed, /):
+        lines = parsed.rawdocs.splitlines() if parsed.rawdocs else []
+        first = lines[0] if lines else ""
+        # When first-line is not blank, cannot use 'parsed.doc' because inspect.cleandoc performed 'lstrip' on it.
+        if not first.strip() and parsed.docs:  # first line is blank → use cleaned docstring
+            lines = parsed.docs.splitlines()
+            first = lines[0] if lines else ""
+
+        # Check leading whitespaces in the first line of the docstring (not blank)
+        if first and not first.isspace() and leading_whitespaces_regex.search(first):
+            yield cls.DOC012, (first,)
+
         for section_def in parsed.bad_whitespaces_def:
             yield cls.DOC010, (section_def,)
 
     @classmethod
-    def validate_head_tail_quotes(cls, parsed, /):
+    def validate_edge_quotes(cls, parsed, /):
         text = parsed.rawdocs
         if text:
             lines = text.splitlines()
@@ -393,13 +411,10 @@ class Violations:
     @classmethod
     def discover_all(cls, parsed, parameters, has_returns, is_implemented, /):
         yield from ((cls.DOC001, (section_key,)) for section_key in parsed.invalid)
-        yield from cls.validate_empty_lines(parsed)
-        yield from cls.validate_head_tail_quotes(parsed)
+        yield from cls.validate_blank_lines(parsed)
+        yield from cls.validate_whitespaces(parsed)
+        yield from cls.validate_edge_quotes(parsed)
         yield from cls.validate_summary(parsed)
-        yield from cls.validate_bad_whitespaces(parsed)
-
-        if parsed.non_empty_end_lines:
-            yield cls.DOC011, ()
 
         if parsed.kind == NodeTypes.FUNCTION:  # Only functions have parameters, returns, and raises
             yield from cls.validate_params(parsed, parameters)
@@ -597,10 +612,10 @@ def parse_docs(node, filename, /):
         elif section_key not in invalid:
             invalid.append(section_key)
 
-    non_empty_end_lines = False
+    non_blank_end_lines = False
     if section_key in types_set and len(b_raw.splitlines()) > 1:
-        # Check for non-empty lines after the last section. (Only for type sections that cannot have a description)
-        non_empty_end_lines = any(line.strip() for line in b_raw.splitlines()[1:])  # Non-empty lines
+        # Check for non-blank lines after the last section. (Only for type sections that cannot have a description)
+        non_blank_end_lines = any(line.strip() for line in b_raw.splitlines()[1:])  # Non-empty lines
 
     if docs:
         summary = get_summary(docs)
@@ -633,7 +648,7 @@ def parse_docs(node, filename, /):
         ignored=ignored,
         bad_whitespaces_def=bad_whitespaces_def,
         missing_blank_line_after=missing_blank_line_after,
-        non_empty_end_lines=non_empty_end_lines,
+        non_blank_end_lines=non_blank_end_lines,
     )
 
 

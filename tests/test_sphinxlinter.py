@@ -58,7 +58,7 @@ def dummy():
         assert not result
 
     @pytest.mark.parametrize("value", (None, ""))
-    def test_validate_empty_lines(self, value):
+    def test_validate_blank_lines(self, value):
         # Test condition when there is no docstring (or empty)
         parsed = sphinxlinter.ParsedDocs(
             kind="function",
@@ -70,14 +70,14 @@ def dummy():
             invalid=list(),
             ignored=list(),
             bad_whitespaces_def=list(),
-            non_empty_end_lines=False,
+            non_blank_end_lines=False,
             rawdocs=value,
             docs=None,
             docs_ini_lineno=None,
             docs_end_lineno=None,
             missing_blank_line_after=False,
         )
-        result = tuple(sphinxlinter.Violations.validate_empty_lines(parsed))
+        result = tuple(sphinxlinter.Violations.validate_blank_lines(parsed))
         assert not result
 
     @pytest.mark.parametrize(
@@ -109,7 +109,7 @@ def dummy():
             invalid=list(),
             ignored=list(),
             bad_whitespaces_def=list(),
-            non_empty_end_lines=False,
+            non_blank_end_lines=False,
             rawdocs=None,
             docs=None,
             docs_ini_lineno=None,
