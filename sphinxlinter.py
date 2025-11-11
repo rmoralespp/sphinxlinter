@@ -3,6 +3,7 @@
 import argparse
 import ast
 import collections
+import importlib.metadata
 import inspect
 import itertools
 import linecache
@@ -924,9 +925,13 @@ def dump_file(violations, quiet, path, /):
 
 
 def dump_version():
-    with pathlib.Path(__file__).with_name("pyproject.toml").open("rb") as f:
-        version = tomllib.load(f)["project"]["version"]
-        print("sphinx-linter {}".format(version))
+    path = pathlib.Path(__file__).with_name("pyproject.toml")
+    if path.exists():  # standalone script
+        with path.open("rb") as f:
+            version = tomllib.load(f)["project"]["version"]
+    else:  # installed package
+        version = importlib.metadata.version("sphinx-linter")
+    print("sphinx-linter {}".format(version))
 
 
 def get_config_start_dir(paths, /):

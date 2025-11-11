@@ -1,5 +1,9 @@
 ## Releases
 
+### v0.1.1 (2025-11-11)
+
+- **Fixed:** Option `--version` when used with `sphinx-linter` as installed package.
+
 ### v0.1.0 (2025-11-11)
 
 - **Added:** Rule `DOC012` to check for leading in first non-blank line of docstring.
