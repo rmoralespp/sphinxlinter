@@ -210,7 +210,7 @@ class Violations:
     DOC104 = (True, "DOC104", "Parameter type mismatch with annotation ({!r} != {!r})")
     DOC105 = (True, "DOC105", "Duplicated parameter ({!r})")
     DOC106 = (True, "DOC106", "Parameter order mismatch with signature")
-    DOC107 = (False, "DOC107", "Missing parameter in docstring ({!r})") # Disabled by default
+    DOC107 = (False, "DOC107", "Missing parameter in docstring ({!r})")  # Disabled by default
 
     # DOC2xx: Return issues
     DOC201 = (True, "DOC201", "Return documented but function has no return statement")
