@@ -1,5 +1,10 @@
 ## Releases
 
+### v0.1.2 (2025-11-11)
+
+- **Changed:** Limit minimum Python version to 3.11 because `tomllib` is introduced in this version.
+- **Changed:** Skip `pyproject.toml` if PermissionError is raised when trying to read it.
+
 ### v0.1.1 (2025-11-11)
 
 - **Fixed:** Option --version when used with sphinx-linter as installed package.
