@@ -166,6 +166,7 @@ path/to/file.py:LINE-NUMBER: [CODE] Description of the violation.
 | DOC103 | Parameter type already in signature       | Avoids redundant type info.               |
 | DOC104 | Parameter type mismatch with annotation   | Ensures consistency with annotations.     |
 | DOC105 | Duplicated parameter                      | Prevents repetition.                      |
+| DOC106 | Parameter order mismatch with signature   | Validates parameter order.                |
 
 ---
 

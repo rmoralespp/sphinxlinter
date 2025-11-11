@@ -214,10 +214,8 @@ def dummy():
 
     def test_discover(self):
         # Test code not in valid rules.
-        parsed = object()
-        parameters = object()
-        has_returns = object()
-        is_implemented = object()
+        parsed_docs = object()
+        parsed_func = object()
         obj = sphinxlinter.Violations(enable=(1, 3))
         values = (
             ((True, 1, "msg1"), "ctx1"),
@@ -229,7 +227,7 @@ def dummy():
             ((3, "msg3"), "ctx3"),
         )
         with unittest.mock.patch.object(obj, "discover_all", return_value=values) as discovered:
-            result = tuple(obj.discover(parsed, parameters, has_returns, is_implemented))
+            result = tuple(obj.discover(parsed_docs, parsed_func))
 
-        discovered.assert_called_once_with(parsed, parameters, has_returns, is_implemented)
+        discovered.assert_called_once_with(parsed_docs, parsed_func)
         assert result == expected

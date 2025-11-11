@@ -98,6 +98,31 @@ class NodeTypes:
     CLASS = "class"
     MODULE = "module"
 
+# ----------------------------------------------------------------------------
+# Function definition parsed properties
+# ----------------------------------------------------------------------------
+
+
+class ParsedFuncParam(typing.NamedTuple):
+    name: str
+    order: int
+    annotation: str | None
+
+
+class ParsedFuncReturn(typing.NamedTuple):
+    has_return: bool  # True if the function has a return or yield statement.
+    annotation: str | None
+
+
+class ParsedFuncDef(typing.NamedTuple):
+    parameters: dict[str, ParsedFuncParam]
+    returns: ParsedFuncReturn
+    is_implemented: bool  # True if the function is implemented (not just a stub)
+
+
+# ----------------------------------------------------------------------------
+# Function docstring parsed properties
+# ----------------------------------------------------------------------------
 
 class ParsedDocsParam(typing.NamedTuple):
     section_key: str
@@ -181,6 +206,7 @@ class Violations:
     DOC103 = (True, "DOC103", "Parameter type already in signature ({!r})")
     DOC104 = (True, "DOC104", "Parameter type mismatch with annotation ({!r} != {!r})")
     DOC105 = (True, "DOC105", "Duplicated parameter ({!r})")
+    DOC106 = (True, "DOC106", "Parameter order mismatch with signature")
 
     # DOC2xx: Return issues
     DOC201 = (True, "DOC201", "Return documented but function has no return statement")
@@ -230,11 +256,11 @@ class Violations:
         return cls.is_valid_syntax(f"x: {hint}", mode="exec") if hint else False
 
     @classmethod
-    def validate_blank_lines(cls, parsed, /):
-        if parsed.missing_blank_line_after:
+    def validate_blank_lines(cls, parsed_docs, /):
+        if parsed_docs.missing_blank_line_after:
             yield cls.DOC003, ()
 
-        if text := parsed.rawdocs:
+        if text := parsed_docs.rawdocs:
             hits = blank_lines_regex.finditer(text)
             present = next(filter(None, hits), None)
             if present:
@@ -248,28 +274,28 @@ class Violations:
                     # finditer: Empty matches are included in the result.
                     yield cls.DOC006, ()
 
-        if parsed.non_blank_end_lines:
+        if parsed_docs.non_blank_end_lines:
             yield cls.DOC011, ()
 
     @classmethod
-    def validate_whitespaces(cls, parsed, /):
-        lines = parsed.rawdocs.splitlines() if parsed.rawdocs else []
+    def validate_whitespaces(cls, parsed_docs, /):
+        lines = parsed_docs.rawdocs.splitlines() if parsed_docs.rawdocs else []
         first = lines[0] if lines else ""
         # Check leading whitespaces in the first non-blank line:
         # - first line is not blank → use raw docstring first line ('parsed.docs' removed leading spaces)
         # - first line is blank → use cleaned docstring first line (to find the first non-blank line)
-        if not first.strip() and parsed.docs:
-            lines = parsed.docs.splitlines()
+        if not first.strip() and parsed_docs.docs:
+            lines = parsed_docs.docs.splitlines()
             first = lines[0] if lines else ""
         if first and not first.isspace() and leading_ws_regex.search(first):
             yield cls.DOC012, (first,)
 
-        for section_def in parsed.bad_whitespaces_def:
+        for section_def in parsed_docs.bad_whitespaces_def:
             yield cls.DOC010, (section_def,)
 
     @classmethod
-    def validate_edge_quotes(cls, parsed, /):
-        text = parsed.rawdocs
+    def validate_edge_quotes(cls, parsed_docs, /):
+        text = parsed_docs.rawdocs
         if text:
             lines = text.splitlines()
             if len(lines) > 1 and (quotes_starts_regex.match(lines[0]) or quotes_ends_regex.match(lines[-1])):
@@ -291,17 +317,30 @@ class Violations:
                     yield cls.DOC008, ()  # Summary should end with a period
 
     @classmethod
-    def validate_params(cls, parsed, parameters, /):
-        bag = set()
-        first_raises = min(parsed.raises, key=cls._get_order, default=None)
-        first_return = min(parsed.returns, key=cls._get_order, default=None)
-        for param in parsed.params:
+    def validate_params(cls, parsed_docs, parsed_params, /):
+        """
+        Validate the parameter sections of the parsed docstring against the function definition.
+
+        :param parsed_docs: ParsedDocs parsed: Parsed docstring object.
+        :param dict[str, ParsedFuncParam] parsed_params: Parsed function parameters.
+        :return: Generator yielding violation tuples.
+        """
+
+        documented = list()  # Documented parameters, without duplicates and in order of appearance
+
+        first_raises = min(parsed_docs.raises, key=cls._get_order, default=None)
+        first_return = min(parsed_docs.returns, key=cls._get_order, default=None)
+
+        for param in parsed_docs.params:
             section_key, sep, name, kind, order = param
-            type_hint = parameters.get(name)
-            # Malformed param: missing ':' or missing name/type when required
+
+            param_props = parsed_params.get(name)
+            type_hint = param_props.annotation if param_props else None
+
+            # Malformed: missing sep/name/type(when required)
             if not (sep and name) or (section_key == ptype_key and not kind):
                 yield cls.DOC002, (section_key,)
-            if name and name not in parameters:  # Documented but not in signature
+            if name and name not in parsed_params:  # Documented but not in signature
                 yield cls.DOC101, (name,)
             if kind and not cls.is_valid_type_hint(kind):  # Invalid type syntax
                 yield cls.DOC102, (kind,)
@@ -310,7 +349,7 @@ class Violations:
             if kind and type_hint and kind != type_hint:  # Mismatched type
                 yield cls.DOC104, (kind, type_hint)
 
-            if name and name in bag:  # Duplicated parameter
+            if name and name in documented:  # Duplicated parameter
                 yield cls.DOC105, (name,)
 
             if first_raises and order > first_raises.order:
@@ -320,30 +359,39 @@ class Violations:
                 # Params after returns are considered misplaced
                 yield cls.DOC007, (section_key, first_return.section_key,)
 
-            if name:
-                bag.add(name)
+            if name and name not in documented:
+                documented.append(name)
+
+        # Check parameter order ignoring missing/extra parameters
+        orderby = operator.attrgetter("order")
+        # Ignore parameters not documented
+        defined_documented = [n.name for n in sorted(parsed_params.values(), key=orderby) if n.name in documented]
+        # Ignore documented parameters not in the function definition
+        documented_defined = [n for n in documented if n in parsed_params]
+        if defined_documented != documented_defined:
+            print(defined_documented, documented_defined)
+            yield cls.DOC106, ()
 
     @classmethod
-    def validate_return(cls, parsed, sign_return_type, has_returns, is_implemented, /):
+    def validate_return(cls, parsed_docs, parsed_return, is_implemented, /):
         """
         Validate the return sections of the parsed docstring.
 
-        :param ParsedDocs parsed: Parsed docstring object.
-        :param str | None sign_return_type: Return type from function signature.
-        :param set[str] has_returns: True if the function has a return or yield statement.
+        :param ParsedDocs parsed_docs: Parsed docstring object.
+        :param ParsedFuncReturn parsed_return: Parsed function return properties.
         :param bool is_implemented: True if the function is implemented (not just a stub).
-
         :return: Generator yielding violation tuples.
         """
 
-        if parsed.returns and (not has_returns and is_implemented):
+        sign_return_type = parsed_return.annotation
+        if parsed_docs.returns and (not parsed_return.has_return and is_implemented):
             yield cls.DOC201, ()  # Return documented but implementation has no return
 
         bag = set()
-        for doc_returns in parsed.returns:
+        for doc_returns in parsed_docs.returns:
             section_key, sep, doc_return_type, description, section_key_ctx, order = doc_returns
 
-            # Malformed return: missing ':' or missing type/description when required or invalid context
+            # Malformed return:  missing sep/type/description(when required) or invalid context
             if not sep or section_key_ctx:
                 # Missing ':' separator or invalid context (section_key_ctx is True)
                 yield cls.DOC002, (section_key,)
@@ -352,6 +400,7 @@ class Violations:
                 yield cls.DOC002, (section_key,)
             elif section_key == rtype_key and not doc_return_type:  # ´:rtype:´ without type
                 yield cls.DOC002, (section_key,)
+
             # Invalid or redundant return type checks
             if doc_return_type and not cls.is_valid_type_hint(doc_return_type):  # Invalid return type
                 yield cls.DOC202, (doc_return_type,)
@@ -369,12 +418,14 @@ class Violations:
                 bag.add(section_key)
 
     @classmethod
-    def validate_raises(cls, parsed, /):
-        bag = set()
-        first_return = min(parsed.returns, key=cls._get_order, default=None)
+    def validate_raises(cls, parsed_docs, /):
+        """Validate the raises sections of the parsed docstring."""
 
-        for section_key, sep, error_types, order in parsed.raises:
-            if not (sep and error_types):  # Missing ':' or missing error types
+        bag = set()
+        first_return = min(parsed_docs.returns, key=cls._get_order, default=None)
+
+        for section_key, sep, error_types, order in parsed_docs.raises:
+            if not (sep and error_types):  # Missing sep/error types
                 yield cls.DOC002, (section_key,)
 
             is_invalid = any(not cls.is_valid_syntax(e) for e in error_types)
@@ -391,14 +442,16 @@ class Violations:
                 yield cls.DOC007, (section_key, first_return.section_key,)
 
     @classmethod
-    def validate_variables(cls, parsed, /):
+    def validate_variables(cls, parsed_docs, /):
+        """Validate the variable sections of the parsed docstring."""
+
         bag = set()
-        for var in parsed.variables:
+        for var in parsed_docs.variables:
             section_key, sep, name, kind, with_spaces, description, order = var
             missing_desc = section_key in class_var_set and not description
             missing_type = section_key == vartype_key and not kind
 
-            # Malformed var: missing ':' or missing name/type when required or missing description when required
+            # Malformed var: missing sep/name/description(when required)/type(when required)
             if not (sep and name) or missing_type or missing_desc:
                 yield cls.DOC002, (section_key,)
             if kind and not cls.is_valid_type_hint(kind):  # Invalid type syntax
@@ -412,22 +465,22 @@ class Violations:
                 bag.add((section_key, name))
 
     @classmethod
-    def discover_all(cls, parsed, parameters, has_returns, is_implemented, /):
-        yield from ((cls.DOC001, (section_key,)) for section_key in parsed.invalid)
-        yield from cls.validate_blank_lines(parsed)
-        yield from cls.validate_whitespaces(parsed)
-        yield from cls.validate_edge_quotes(parsed)
-        yield from cls.validate_summary(parsed)
+    def discover_all(cls, parsed_docs, parsed_func, /):
+        yield from ((cls.DOC001, (section_key,)) for section_key in parsed_docs.invalid)
+        yield from cls.validate_blank_lines(parsed_docs)
+        yield from cls.validate_whitespaces(parsed_docs)
+        yield from cls.validate_edge_quotes(parsed_docs)
+        yield from cls.validate_summary(parsed_docs)
 
-        if parsed.kind == NodeTypes.FUNCTION:  # Only functions have parameters, returns, and raises
-            yield from cls.validate_params(parsed, parameters)
-            yield from cls.validate_return(parsed, parameters.get("return"), has_returns, is_implemented)
-            yield from cls.validate_raises(parsed)
-        elif parsed.kind in (NodeTypes.CLASS, NodeTypes.MODULE):  # Only classes and modules have variables
-            yield from cls.validate_variables(parsed)
+        if parsed_docs.kind == NodeTypes.FUNCTION:  # Only functions have parameters, returns, and raises
+            yield from cls.validate_params(parsed_docs, parsed_func.parameters)
+            yield from cls.validate_return(parsed_docs, parsed_func.returns, parsed_func.is_implemented)
+            yield from cls.validate_raises(parsed_docs)
+        elif parsed_docs.kind in (NodeTypes.CLASS, NodeTypes.MODULE):  # Only classes and modules have variables
+            yield from cls.validate_variables(parsed_docs)
 
-    def discover(self, parsed, parameters, has_returns, is_implemented, /):
-        for (_, code, msg), ctx in self.discover_all(parsed, parameters, has_returns, is_implemented):
+    def discover(self, parsed_docs, parsed_func, /):
+        for (_, code, msg), ctx in self.discover_all(parsed_docs, parsed_func):
             if code in self.valid:
                 self.stats[code] += 1
                 yield ((code, msg), ctx)
@@ -737,6 +790,38 @@ def is_not_implemented(node, /, rawdocs=None):
             return False
 
 
+def get_args(node, /):
+    """Yield function parameters in the exact order defined by Python's function signature grammar."""
+
+    yield from node.args.posonlyargs  # Positional-only args
+    yield from node.args.args  # Regular args
+    if vararg := node.args.vararg:  # Var positional arg (*args)
+        yield vararg
+    yield from node.args.kwonlyargs  # Keyword-only args
+    if kwarg := node.args.kwarg:  # Var keyword arg (**kwargs)
+        yield kwarg
+
+
+def get_params_props(node, /):
+    """Returns an iterator with each function parameter's properties."""
+
+    for order, arg in enumerate(get_args(node)):
+        annotation = ast.unparse(ann) if (ann := arg.annotation) else None
+        yield (arg.arg, ParsedFuncParam(arg.arg, order, annotation))
+
+
+def get_return_props(node, has_returns, /):
+    """Fetches the function return properties."""
+
+    annotation = ast.unparse(node.returns) if node.returns else None
+    return ParsedFuncReturn(has_returns, annotation)
+
+
+def check_node(node, violations, filename, /):
+    for lineno, code, msg, ctx in checker(node, violations, filename):
+        yield (lineno, code, msg.format(*ctx))
+
+
 def checker(node, violations, filename, /):
     """
     Explore the given AST node and yield each violation found.
@@ -749,39 +834,19 @@ def checker(node, violations, filename, /):
     :rtype: typing.Iterator[tuple[int, str, dict]]
     """
 
-    parsed = parse_docs(node, filename)
-    lineno = parsed.docs_ini_lineno
+    parsed_docs = parse_docs(node, filename)
+    lineno = parsed_docs.docs_ini_lineno
 
-    if parsed.kind == NodeTypes.FUNCTION:
-        func_params = dict(get_params(node))
-        func_has_returns = has_return_or_yield(node)
-        func_is_implemented = not is_not_implemented(node, rawdocs=parsed.rawdocs)
+    if parsed_docs.kind == NodeTypes.FUNCTION:
+        func_params_props = dict(get_params_props(node))
+        func_return_props = get_return_props(node, has_return_or_yield(node))
+        func_is_implemented = not is_not_implemented(node, rawdocs=parsed_docs.rawdocs)
+        parsed_func = ParsedFuncDef(func_params_props, func_return_props, func_is_implemented)
     else:  # ClassDef or Module
-        func_params = dict()
-        func_has_returns = False
-        func_is_implemented = False
+        parsed_func = None
 
-    for (code, msg), ctx in violations.discover(parsed, func_params, func_has_returns, func_is_implemented):
+    for (code, msg), ctx in violations.discover(parsed_docs, parsed_func):
         yield (lineno, code, msg, ctx)
-
-
-def get_args(node, /):
-    yield from node.args.posonlyargs  # Positional-only args
-    yield from node.args.args  # Regular args
-    yield from node.args.kwonlyargs  # Keyword-only args
-    yield from filter(None, (node.args.vararg, node.args.kwarg))  # *args, **kwargs
-
-
-def get_params(node, /):
-    for arg in get_args(node):
-        yield (arg.arg, ast.unparse(ann) if (ann := arg.annotation) else None)
-    if node.returns:
-        yield ("return", ast.unparse(node.returns))
-
-
-def check_node(node, violations, filename, /):
-    for lineno, code, msg, ctx in checker(node, violations, filename):
-        yield (lineno, code, msg.format(*ctx))
 
 
 def walk_module(quiet, data, filename, /):

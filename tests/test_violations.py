@@ -310,6 +310,49 @@ def foo():
     assert result == expected
 
 
+def test_DOC007_single(violations):
+    content = '''
+def foo(a, b):
+    """
+    Title.
+
+    :param int a: description
+    :raises ValueError: description
+    :param int b: description
+    """
+
+    pass
+'''
+    expected = (
+        (3, 'DOC007', 'Misplaced section ({!r} appears after {!r})', ('param', 'raises',)),
+    )
+    result = tuple(chequer(content, violations))
+    assert result == expected
+
+
+def test_DOC007_multiple(violations):
+    content = '''
+def foo(a, b, c):
+    """
+    Title.
+
+    :raises ValueError: description
+    :param int b: description
+    :return: description
+    :type c: int
+    """
+
+    pass
+'''
+    expected = (
+        (3, 'DOC007', 'Misplaced section ({!r} appears after {!r})', ('param', 'raises')),
+        (3, 'DOC007', 'Misplaced section ({!r} appears after {!r})', ('type', 'raises')),
+        (3, 'DOC007', 'Misplaced section ({!r} appears after {!r})', ('type', 'return')),
+    )
+    result = tuple(chequer(content, violations))
+    assert result == expected
+
+
 @pytest.mark.parametrize("docs", ["Title", "\nTitle"])
 def test_DOC008_oneline_docstring(violations, docs):
     content = f'''
@@ -701,45 +744,35 @@ def foo(a):
     assert result == expected
 
 
-def test_DOC106_single(violations):
-    content = '''
-def foo(a, b):
+@pytest.mark.parametrize("params", ["a, b", "a, b, c"])
+def test_DOC106(params, violations):
+    content = f'''
+def foo({params}):
     """
-    Title.
-
-    :param int a: description
-    :raises ValueError: description
-    :param int b: description
+    :param str b: description
+    :type a: str
     """
 
     pass
 '''
     expected = (
-        (3, 'DOC007', 'Misplaced section ({!r} appears after {!r})', ('param', 'raises',)),
+        (3, "DOC106", "Parameter order mismatch with signature", ()),
     )
     result = tuple(chequer(content, violations))
     assert result == expected
 
 
-def test_DOC106_multiple(violations):
-    content = '''
-def foo(a, b, c):
+@pytest.mark.parametrize("params", ["a, b", "a, b, c"])
+def test_DOC106_no_raise_ignore_undocumented_params(params, violations):
+    content = f'''
+def foo({params}):
     """
-    Title.
-
-    :raises ValueError: description
-    :param int b: description
-    :return: description
-    :type c: int
+    :param str b: description
     """
 
     pass
 '''
-    expected = (
-        (3, 'DOC007', 'Misplaced section ({!r} appears after {!r})', ('param', 'raises')),
-        (3, 'DOC007', 'Misplaced section ({!r} appears after {!r})', ('type', 'raises')),
-        (3, 'DOC007', 'Misplaced section ({!r} appears after {!r})', ('type', 'return')),
-    )
+    expected = ()
     result = tuple(chequer(content, violations))
     assert result == expected
 
