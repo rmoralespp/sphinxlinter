@@ -38,7 +38,7 @@ Specifically, it focuses on:
 
 ## 📦 Installation
 
-Requires **Python ≥ 3.9**.
+Requires **Python ≥ 3.11**.
 
 To install via `pip`, run:
 
