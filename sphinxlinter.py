@@ -13,10 +13,9 @@ import os.path
 import pathlib
 import re
 import sys
+import tomllib
 import typing
 import warnings
-
-import tomllib
 
 # Ignore, at least, these directory basenames (default directories to ignore).
 default_ignore_dirs = (
