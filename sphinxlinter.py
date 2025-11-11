@@ -369,7 +369,6 @@ class Violations:
         # Ignore documented parameters not in the function definition
         documented_defined = [n for n in documented if n in parsed_params]
         if defined_documented != documented_defined:
-            print(defined_documented, documented_defined)
             yield cls.DOC106, ()
 
     @classmethod
