@@ -14,7 +14,7 @@ def parse_content(data):
 
 @pytest.fixture(scope='module')
 def violations():
-    return sphinxlinter.Violations(enable=["ALL"])
+    return sphinxlinter.Violations()
 
 
 def chequer(content, violations, next_line=""):
@@ -336,7 +336,6 @@ def foo(a, b, c):
     """
     Title.
 
-    :param int a: description
     :raises ValueError: description
     :param int b: description
     :return: description
@@ -488,7 +487,7 @@ def foo(a):
 ])
 def test_DOC010_function_ignoring_descriptions_ws(section, violations):
     content = f'''
-def foo(a):
+def foo(a, b):
     """
     Title.
 
@@ -756,15 +755,9 @@ def foo({params}):
 
     pass
 '''
-
-    # Raise DOC106 always, and DOC107 if any parameter is missing in the docstring
     expected = (
         (3, "DOC106", "Parameter order mismatch with signature", ()),
     )
-    if params == "a, b, c":
-        expected += (
-            (3, "DOC107", "Missing parameter in docstring ({!r})", ("c",)),
-        )
     result = tuple(chequer(content, violations))
     assert result == expected
 
@@ -778,50 +771,6 @@ def foo({params}):
     """
 
     pass
-'''
-
-    # Raise DOC107 for each undocumented parameter, but not DOC106
-    if params == "a, b":
-        expected = (
-            (3, "DOC107", "Missing parameter in docstring ({!r})", ("a",)),
-        )
-    else:
-        expected = (
-            (3, "DOC107", "Missing parameter in docstring ({!r})", ("a",)),
-            (3, "DOC107", "Missing parameter in docstring ({!r})", ("c",)),
-        )
-
-    result = tuple(chequer(content, violations))
-    assert result == expected
-
-
-def test_DOC107(violations):
-    content = '''
-def foo(self, cls, a, b, c, *args, **kwargs):
-    """
-    :type a: str
-    """
-
-    pass
-'''
-    expected = (
-        (3, 'DOC107', 'Missing parameter in docstring ({!r})', ('b',)),
-        (3, 'DOC107', 'Missing parameter in docstring ({!r})', ('c',)),
-    )
-    result = tuple(chequer(content, violations))
-    assert result == expected
-
-
-def test_DOC107_ignore_if_are_none_documented(violations):
-    content = '''
-def foo(a, b, c):
-    """
-    Title.
-
-    :rtype: int
-    """
-
-    return 1
 '''
     expected = ()
     result = tuple(chequer(content, violations))

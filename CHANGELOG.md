@@ -6,7 +6,7 @@
 - **Added:** Rule `DOC106` to check parameter order mismatch with function signature.
 - **Added:** Rule `DOC107` to check missing parameters in docstring. (by default disabled)
 - **Added:** Add CLI parameter `--version`
-- **Added:** Allow read custom configuration from `configuration from `pyproject.toml` files.`.
+- **Added:** Allow read custom configuration from `configuration from `pyproject.toml` files`.
 
 ### v0.0.17 (2025-11-07)
 
