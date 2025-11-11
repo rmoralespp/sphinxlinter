@@ -1,6 +1,6 @@
 [project]
 name = "sphinx-linter"
-version = "0.1.1"
+version = "0.1.2"
 description = "A lightweight Python linter for checking Sphinx docstrings."
 readme = "README.md"
 license-files = ["LICENSE"]
