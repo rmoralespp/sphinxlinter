@@ -82,16 +82,62 @@ python sphinxlinter.py path/to/source/
 
 ## Command Line Usage
 
-| Argument / Option | Description                                         |
-|-------------------|-----------------------------------------------------|
-| `[FILES]`         | Files or directories to lint.                       |
-| `--help`          | Show help message and exit.                         |
-| `--enable`        | Enable specific rule codes (or `ALL`).              |
-| `--disable`       | Disable specific rule codes (overrides `--enable`). |
-| `--ignore`        | Exclude directories (e.g. `venv`, `.cache`).        |
-| `--statistics`    | Show per-rule violation counts.                     |
-| `--quiet`         | Suppress all output except summary.                 |
-| `--version`       | Show version information and exit.                  |
+| Argument / Option | Description                                                                             |
+|-------------------|-----------------------------------------------------------------------------------------|
+| `[FILES]`         | Files or directories to lint.                                                           |
+| `--help`          | Show help message and exit.                                                             |
+| `--enable`        | Enable specific rule codes (or `ALL`).                                                  |
+| `--disable`       | Disable specific rule codes (overrides `--enable`).                                     |
+| `--ignore`        | Exclude directories (e.g. `venv`, `.cache`).                                            |
+| `--statistics`    | Show per-rule violation counts.                                                         |
+| `--quiet`         | Print diagnostics, but nothing else                                                     |
+| `--version`       | Print version and exit                                                                  |
+| `--config`        | If not provided, search upward from the `[FILES]`’ common ancestor for `pyproject.toml` |
+| `--isolated `     | Run in isolated mode, ignoring configuration files                                      |
+
+---
+
+## Setting Configuration
+
+Configuration is done via `pyproject.toml`.
+The configuration section is `[tool.sphinx-linter]`.
+
+### Configuration File Location
+
+The linter uses `--config` to specify a configuration file. If this option is not provided, it searches for a
+configuration file starting at the common ancestor of all specified files/directories, moving upward until it finds one
+or reaches the filesystem root.
+If no configuration file is found, the linter runs with its default settings.
+
+> [!NOTE]
+> **Ignores search configuration files that meet any of the following conditions:**
+>
+> - Malformed `pyproject.toml` is detected.
+> - No `[tool.sphinx-linter]` section is found.
+> - Permissions prevent reading the file.
+>
+> **Also ignored if:**
+> - The `--isolated` flag is set.
+> - A specific configuration file is provided via `--config`.
+
+
+**Example configuration:**
+
+```toml
+[tool.sphinx-linter]
+# Enable all rules, alternatively specify individual rule codes
+enable = ["ALL"]
+# Disable specific rules, taking precedence over enable
+disable = ["DOC003", "DOC101"]
+# Ignore specific directories from linting
+ignore = ["venv", ".cache"]
+```
+
+> [!NOTE]
+>
+> Can also be set via CLI options `--enable`, `--disable`, and `--ignore`.
+>
+> If both CLI options and configuration file are provided, **CLI options take precedence**.
 
 ---
 
@@ -126,20 +172,21 @@ path/to/file.py:LINE-NUMBER: [CODE] Description of the violation.
 
 ### DOC0xx — Structure
 
-| Code   | Description                                       | Purpose                                                                         |
-|--------|---------------------------------------------------|---------------------------------------------------------------------------------|
-| DOC001 | Invalid docstring section                         | Detects unknown Sphinx fields.                                                  |
-| DOC002 | Malformed section                                 | Ensures valid field list syntax.                                                |
-| DOC003 | Missing blank line after docstring                | Improves readability.                                                           |
-| DOC004 | Missing blank line between summary and sections   | Enforces structure consistency.                                                 |
-| DOC005 | Too many consecutive blank lines                  | Prevents unnecessary whitespace.                                                |
-| DOC006 | Trailing empty lines                              | Keeps docstrings compact.                                                       |
-| DOC007 | Misplaced section                                 | Enforces section order and grouping.                                            |
-| DOC008 | One-line docstring should end with a period       | Complies with [PEP 257](https://peps.python.org/pep-0257/#one-line-docstrings). |
-| DOC009 | Docstring must not use more than 3 double quotes  | Promotes consistent quoting.                                                    |
-| DOC010 | Section definition contains invalid whitespace    | Ensures proper formatting.                                                      |
-| DOC011 | Trailing non-empty lines after last section       | Maintains clean endings.                                                        |
-| DOC012 | Leading whitespaces in first non-blank line       | Ensures no leading spaces before docstring content.                             |
+| Code   | Description                                      | Purpose                                                                         |
+|--------|--------------------------------------------------|---------------------------------------------------------------------------------|
+| DOC001 | Invalid docstring section                        | Detects unknown Sphinx fields.                                                  |
+| DOC002 | Malformed section                                | Ensures valid field list syntax.                                                |
+| DOC003 | Missing blank line after docstring               | Improves readability.                                                           |
+| DOC004 | Missing blank line between summary and sections  | Enforces structure consistency.                                                 |
+| DOC005 | Too many consecutive blank lines                 | Prevents unnecessary whitespace.                                                |
+| DOC006 | Trailing empty lines                             | Keeps docstrings compact.                                                       |
+| DOC007 | Misplaced section                                | Enforces section order and grouping.                                            |
+| DOC008 | One-line docstring should end with a period      | Complies with [PEP 257](https://peps.python.org/pep-0257/#one-line-docstrings). |
+| DOC009 | Docstring must not use more than 3 double quotes | Promotes consistent quoting.                                                    |
+| DOC010 | Section definition contains invalid whitespace   | Ensures proper formatting.                                                      |
+| DOC011 | Trailing non-empty lines after last section      | Maintains clean endings.                                                        |
+| DOC012 | Leading whitespaces in first non-blank line      | Ensures no leading spaces before docstring content.                             |
+
 ---
 
 > [!NOTE]
@@ -244,4 +291,4 @@ ruff check . # Run linter
 
 ## 🗒️ License
 
-This project is licensed under the [MIT license](LICENSE).
+This project is licensed under the [MIT license](LICENSE)._

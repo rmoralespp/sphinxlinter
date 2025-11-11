@@ -3,6 +3,7 @@
 - **Added:** Rule `DOC012` to check for leading in first non-blank line of docstring.
 - **Added:** Rule `DOC106` to check parameter order mismatch with function signature.
 - **Added:** Add CLI parameter `--version`
+- **Added:** Allow read custom configuration from `configuration from `pyproject.toml` files.`.
 
 ### v0.0.17 (2025-11-07)
 

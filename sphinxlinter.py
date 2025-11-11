@@ -920,6 +920,45 @@ def dump_version():
         print("sphinx-linter {}".format(version))
 
 
+def get_config_start_dir(paths, /):
+    resolve = (pathlib.Path(p).resolve() for p in paths)
+    parents = map(str, ((p.parent if p.is_file() else p) for p in resolve))
+    return os.path.commonpath(parents)
+
+
+def load_config(config_file, check_files, /):
+    """
+    Load configuration from 'pyproject.toml' if available.
+
+    If 'config_file' is provided, it is used directly.
+    Otherwise, search upward from the common ancestor of 'check_files' for 'pyproject.toml'
+
+    :param str | None config_file: Path to 'pyproject.toml' file.
+    :param list[str] check_files: List of files/directories to check.
+    :rtype: dict
+    """
+
+    config = dict()
+    if config_file:
+        paths = (pathlib.Path(config_file),)
+    else:
+        dirpath = pathlib.Path(get_config_start_dir(check_files))
+        parents = (dirpath, *dirpath.parents)
+        paths = (p for parent in parents if (p := (parent / "pyproject.toml")) and p.exists())
+
+    for path in paths:
+        try:
+            data = tomllib.loads(path.read_text())
+        except tomllib.TOMLDecodeError:
+            continue  # pyproject is malformed, skip
+        else:
+            if "tool" in data and "sphinx-linter" in data["tool"]:
+                # Only use if it has [tool.sphinx-linter] section
+                config = data["tool"]["sphinx-linter"]
+                break
+    return config
+
+
 def main():
     logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 
@@ -928,27 +967,27 @@ def main():
         "files",
         nargs=argparse.ZERO_OR_MORE,
         default=[os.path.curdir],
-        help="files or directories to check",
+        help="Files or directories to check",
     )
     parser.add_argument(
         "--statistics",
         action="store_const",
         const=True,
         default=False,
-        help="show counts for every rule with at least one violation",
+        help="Show counts for every rule with at least one violation",
     )
     parser.add_argument(
         "--quiet",
         action="store_const",
         const=True,
         default=False,
-        help="print diagnostics, but nothing else",
+        help="Print diagnostics, but nothing else",
     )
     parser.add_argument(
         "--ignore",
         nargs=argparse.ZERO_OR_MORE,
-        default=default_ignore_dirs,
-        help="directories to ignore. Defaults to: {}".format(", ".join(default_ignore_dirs)),
+        default=[],
+        help="Directories to ignore. Defaults to: ({})".format(", ".join(default_ignore_dirs)),
     )
     parser.add_argument(
         "--enable",
@@ -971,6 +1010,22 @@ def main():
         default=False,
         help="Print version and exit",
     )
+    parser.add_argument(
+        "--config",
+        type=str,
+        default=None,
+        help=(
+            "Path to 'pyproject.toml' configuration file. "
+            "If not provided, search upward from the files’ common ancestor for 'pyproject.toml'"
+        ),
+    )
+    parser.add_argument(
+        "--isolated",
+        action="store_const",
+        const=True,
+        default=False,
+        help="Run in isolated mode, ignoring configuration files",
+    )
 
     # Disable SyntaxWarnings to reduce output noise from python parser
     #   for example: SyntaxWarning: invalid escape sequence
@@ -981,8 +1036,14 @@ def main():
         dump_version()
         return 0
 
-    violations = Violations(enable=args.enable, disable=args.disable)
-    for path in walk(args.files, args.ignore):
+    config = dict() if args.isolated else load_config(args.config, args.files)
+    # CLI Arguments have precedence over config file settings
+    enable = args.enable or config.get("enable", [])
+    disable = args.disable or config.get("disable", [])
+    ignore = args.ignore or config.get("ignore", default_ignore_dirs)
+
+    violations = Violations(enable=enable, disable=disable)
+    for path in walk(args.files, ignore):
         dump_file(violations, args.quiet, path)
 
     if args.statistics and violations.stats:

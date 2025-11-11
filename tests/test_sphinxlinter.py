@@ -2,6 +2,8 @@
 
 import ast
 import keyword
+import pathlib
+import tempfile
 import unittest.mock
 
 import pytest
@@ -10,6 +12,18 @@ import sphinxlinter
 
 ok_type_hints_kw = keyword.softkwlist + ["False", "None", "True"]
 ko_type_hints_kw = [kw for kw in (keyword.kwlist + keyword.softkwlist) if kw not in ok_type_hints_kw]
+
+
+@pytest.fixture
+def tmp_dirpath():
+    with tempfile.TemporaryDirectory() as tmp:
+        yield pathlib.Path(tmp)
+
+
+def dump_config(tmp_dirpath, lines, /):
+    config_file = tmp_dirpath / "pyproject.toml"
+    config_file.write_text("\n".join(lines))
+    return str(config_file)
 
 
 class TestViolations:
@@ -267,3 +281,257 @@ def test_dump_version_ko_file_not_found():
         pytest.raises(FileNotFoundError),
     ):
         sphinxlinter.dump_version()
+
+
+class TestGetConfigStartDir:
+
+    def test_single_file(self, tmp_dirpath):
+        file = tmp_dirpath / "test.py"
+        file.touch()
+        result = sphinxlinter.get_config_start_dir([str(file)])
+        assert result == str(tmp_dirpath)
+
+    def test_single_directory(self, tmp_dirpath):
+        result = sphinxlinter.get_config_start_dir([str(tmp_dirpath)])
+        assert result == str(tmp_dirpath)
+
+    def test_multiple_files_same_directory(self, tmp_dirpath):
+        file1 = tmp_dirpath / "test1.py"
+        file2 = tmp_dirpath / "test2.py"
+        file1.touch()
+        file2.touch()
+        result = sphinxlinter.get_config_start_dir([str(file1), str(file2)])
+        assert result == str(tmp_dirpath)
+
+    def test_multiple_files_nested_directories(self, tmp_dirpath):
+        subdir = tmp_dirpath / "subdir"
+        subdir.mkdir()
+        file1 = tmp_dirpath / "test1.py"
+        file2 = subdir / "test2.py"
+        file1.touch()
+        file2.touch()
+        result = sphinxlinter.get_config_start_dir([str(file1), str(file2)])
+        assert result == str(tmp_dirpath)
+
+    def test_multiple_directories(self, tmp_dirpath):
+        dir1 = tmp_dirpath / "dir1"
+        dir2 = tmp_dirpath / "dir2"
+        dir1.mkdir()
+        dir2.mkdir()
+        result = sphinxlinter.get_config_start_dir([str(dir1), str(dir2)])
+        assert result == str(tmp_dirpath)
+
+    def test_mixed_files_and_directories(self, tmp_dirpath):
+        subdir = tmp_dirpath / "subdir"
+        subdir.mkdir()
+        file = tmp_dirpath / "test.py"
+        file.touch()
+        result = sphinxlinter.get_config_start_dir([str(file), str(subdir)])
+        assert result == str(tmp_dirpath)
+
+    def test_deeply_nested_paths(self, tmp_dirpath):
+        deep1 = tmp_dirpath / "a" / "b" / "c"
+        deep2 = tmp_dirpath / "a" / "b" / "d"
+        deep1.mkdir(parents=True)
+        deep2.mkdir(parents=True)
+        file1 = deep1 / "test1.py"
+        file2 = deep2 / "test2.py"
+        file1.touch()
+        file2.touch()
+        result = sphinxlinter.get_config_start_dir([str(file1), str(file2)])
+        assert result == str(tmp_dirpath / "a" / "b")
+
+
+class TestLoadConfig:
+
+    def test_explicit_config_file_with_sphinx_linter_section(self, tmp_dirpath):
+        config_lines = (
+            '[tool.sphinx-linter]',
+            'enable = ["DOC001", "DOC002"]',
+            'disable = ["DOC003"]',
+        )
+        config_file = dump_config(tmp_dirpath, config_lines)
+        result = sphinxlinter.load_config(str(config_file), [])
+
+        expected = {"enable": ["DOC001", "DOC002"], "disable": ["DOC003"]}
+        assert result == expected
+
+    def test_explicit_config_file_without_sphinx_linter_section(self, tmp_dirpath):
+        config_lines = (
+            '[tool.other]',
+            'enable = ["DOC001", "DOC002"]',
+            'disable = ["DOC003"]',
+        )
+        config_file = dump_config(tmp_dirpath, config_lines)
+        result = sphinxlinter.load_config(str(config_file), [])
+        assert result == {}
+
+    def test_explicit_config_file_malformed_toml(self, tmp_dirpath):
+        config_file = tmp_dirpath / "pyproject.toml"
+        config_file.write_text("this is not valid TOML {][")  # Malformed TOML file
+        result = sphinxlinter.load_config(str(config_file), [])
+        assert result == {}
+
+    def test_explicit_config_file_not_found(self, tmp_dirpath):
+        config_file = tmp_dirpath / "pyproject.toml"  # Config file does not exist
+        with pytest.raises(FileNotFoundError):
+            sphinxlinter.load_config(str(config_file), [])
+
+    def test_implicit_config_in_same_directory(self, tmp_dirpath):
+        test_file = tmp_dirpath / "test.py"  # pyproject.toml in the same directory as the file
+        test_file.touch()
+
+        config_lines = (
+            '[tool.sphinx-linter]',
+            'enable = ["ALL"]',
+        )
+        dump_config(tmp_dirpath, config_lines)
+
+        result = sphinxlinter.load_config(None, [str(test_file)])
+        expected = {"enable": ["ALL"]}
+        assert result == expected
+
+    def test_implicit_config_in_parent_directory(self, tmp_dirpath):
+        # pyproject.toml in parent directory
+        subdir = tmp_dirpath / "subdir"
+        subdir.mkdir()
+        test_file = subdir / "test.py"
+        test_file.touch()
+
+        config_lines = (
+            '[tool.sphinx-linter]',
+            'disable = ["DOC001"]',
+        )
+        dump_config(tmp_dirpath, config_lines)
+
+        expected = {"disable": ["DOC001"]}
+        result = sphinxlinter.load_config(None, [str(test_file)])
+        assert result == expected
+
+    def test_implicit_config_multiple_levels_up(self, tmp_dirpath):
+        # pyproject.toml several levels up
+        deep_dir = tmp_dirpath / "a" / "b" / "c"
+        deep_dir.mkdir(parents=True)
+        test_file = deep_dir / "test.py"
+        test_file.touch()
+
+        config_lines = (
+            '[tool.sphinx-linter]',
+            'ignore = ["venv", ".git"]',
+        )
+        dump_config(tmp_dirpath, config_lines)
+
+        result = sphinxlinter.load_config(None, [str(test_file)])
+
+        expected = {"ignore": ["venv", ".git"]}
+        assert result == expected
+
+    def test_implicit_config_not_found(self, tmp_dirpath):
+        # No pyproject.toml found in any parent directory
+        test_file = tmp_dirpath / "test.py"
+        test_file.touch()
+        result = sphinxlinter.load_config(None, [str(test_file)])
+        assert result == {}
+
+    def test_implicit_config_closest_file_wins(self, tmp_dirpath):
+        # Multiple pyproject.toml files, closest one should win
+        subdir = tmp_dirpath / "subdir"
+        subdir.mkdir()
+        test_file = subdir / "test.py"
+        test_file.touch()
+
+        # Parent config
+        parent_config_lines = (
+            '[tool.sphinx-linter]',
+            'enable = ["DOC001"]',
+        )
+        dump_config(tmp_dirpath, parent_config_lines)
+
+        # Closer config, wins over parent
+        closer_config_lines = (
+            '[tool.sphinx-linter]',
+            'enable = ["DOC002"]',
+        )
+        dump_config(subdir, closer_config_lines)
+
+        result = sphinxlinter.load_config(None, [str(test_file)])
+
+        expected = {"enable": ["DOC002"]}
+        assert result == expected
+
+    def test_implicit_config_with_multiple_files(self, tmp_dirpath):
+        # Multiple check files, use common ancestor
+        subdir1 = tmp_dirpath / "dir1"
+        subdir2 = tmp_dirpath / "dir2"
+        subdir1.mkdir()
+        subdir2.mkdir()
+
+        file1 = subdir1 / "test1.py"
+        file2 = subdir2 / "test2.py"
+        file1.touch()
+        file2.touch()
+
+        config_lines = (
+            '[tool.sphinx-linter]',
+            'enable = ["DOC001", "DOC002"]',
+        )
+        dump_config(tmp_dirpath, config_lines)
+
+        result = sphinxlinter.load_config(None, [str(file1), str(file2)])
+
+        assert result == {"enable": ["DOC001", "DOC002"]}
+
+    def test_explicit_config_with_full_settings(self, tmp_dirpath):
+        # Test with various configuration options
+        config_file = tmp_dirpath / "pyproject.toml"
+        config_lines = (
+            '[tool.sphinx-linter]',
+            'enable = ["DOC001", "DOC101", "DOC201"]',
+            'disable = ["DOC008"]',
+            'ignore = ["venv", ".venv", "__pycache__"]',
+        )
+        dump_config(tmp_dirpath, config_lines)
+
+        result = sphinxlinter.load_config(str(config_file), [])
+
+        expected = {
+            "enable": ["DOC001", "DOC101", "DOC201"],
+            "disable": ["DOC008"],
+            "ignore": ["venv", ".venv", "__pycache__"],
+        }
+        assert result == expected
+
+    def test_implicit_config_skips_malformed_files(self, tmp_dirpath):
+        # Malformed pyproject.toml should be skipped
+        subdir = tmp_dirpath / "subdir"
+        subdir.mkdir()
+        test_file = subdir / "test.py"
+        test_file.touch()
+
+        # Malformed config in subdir (should be skipped)
+        bad_config = subdir / "pyproject.toml"
+        bad_config.write_text("invalid toml {][")
+
+        # Valid config in parent
+        good_config_lines = (
+            '[tool.sphinx-linter]',
+            'enable = ["DOC001"]',
+        )
+        dump_config(tmp_dirpath, good_config_lines)
+
+        result = sphinxlinter.load_config(None, [str(test_file)])
+
+        assert result == {"enable": ["DOC001"]}
+
+    def test_implicit_config_with_directory_path(self, tmp_dirpath):
+        # Check files contains a directory instead of a file
+        subdir = tmp_dirpath / "subdir"
+        subdir.mkdir()
+        config_lines = (
+            '[tool.sphinx-linter]',
+            'enable = ["ALL"]',
+        )
+        dump_config(tmp_dirpath, config_lines)
+        result = sphinxlinter.load_config(None, [str(subdir)])
+        expected = {"enable": ["ALL"]}
+        assert result == expected
