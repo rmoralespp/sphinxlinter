@@ -91,6 +91,7 @@ python sphinxlinter.py path/to/source/
 | `--ignore`        | Exclude directories (e.g. `venv`, `.cache`).        |
 | `--statistics`    | Show per-rule violation counts.                     |
 | `--quiet`         | Suppress all output except summary.                 |
+| `--version`       | Show version information and exit.                  |
 
 ---
 

@@ -83,10 +83,10 @@ def dummy():
     @pytest.mark.parametrize(
         "docstring, expected",
         (
-            (None, None),
-            ("", None),
-            (" a\nb \n\n ", " a\nb \n\n "),
-            (" a \n:b: \n\n", " a \n"),
+                (None, None),
+                ("", None),
+                (" a\nb \n\n ", " a\nb \n\n "),
+                (" a \n:b: \n\n", " a \n"),
         ),
     )
     def test_get_summary(self, docstring, expected):
@@ -202,9 +202,9 @@ def dummy():
     @pytest.mark.parametrize(
         "enable,disable,expected",
         (
-            ((1,), (1,), frozenset()),
-            ((1,), (2,), frozenset((1,))),
-            ((1, 2, 3), (2,), frozenset((1, 3))),
+                ((1,), (1,), frozenset()),
+                ((1,), (2,), frozenset((1,))),
+                ((1, 2, 3), (2,), frozenset((1, 3))),
         ),
     )
     def test_disable(self, enable, disable, expected):
@@ -231,3 +231,39 @@ def dummy():
 
         discovered.assert_called_once_with(parsed_docs, parsed_func)
         assert result == expected
+
+
+@pytest.mark.parametrize(
+    "mock_toml_content, expected_version",
+    [
+        ({"project": {"version": "1.0.0"}}, "sphinx-linter 1.0.0"),
+        ({"project": {"version": "2.5.3"}}, "sphinx-linter 2.5.3"),
+    ],
+)
+def test_dump_version_ok(mock_toml_content, expected_version):
+    toml_str = "\n".join((
+        '[project]',
+        'version = \"{}\"'.format(mock_toml_content['project']['version']),
+    ))
+    with (
+        unittest.mock.patch("pathlib.Path.open", unittest.mock.mock_open(read_data=toml_str.encode())),
+        unittest.mock.patch("builtins.print") as mock_print,
+    ):
+        sphinxlinter.dump_version()
+        mock_print.assert_called_once_with(expected_version)
+
+
+def test_dump_version_ko_missing_version():
+    with (
+        unittest.mock.patch("pathlib.Path.open", unittest.mock.mock_open(read_data=b"")),
+        pytest.raises(KeyError),
+    ):
+        sphinxlinter.dump_version()
+
+
+def test_dump_version_ko_file_not_found():
+    with (
+        unittest.mock.patch("pathlib.Path.open", side_effect=FileNotFoundError),
+        pytest.raises(FileNotFoundError),
+    ):
+        sphinxlinter.dump_version()

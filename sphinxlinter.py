@@ -15,6 +15,8 @@ import sys
 import typing
 import warnings
 
+import tomllib
+
 # Ignore, at least, these directory basenames (default directories to ignore).
 default_ignore_dirs = (
     # Common virtual environment directories
@@ -97,6 +99,7 @@ class NodeTypes:
     FUNCTION = "function"
     CLASS = "class"
     MODULE = "module"
+
 
 # ----------------------------------------------------------------------------
 # Function definition parsed properties
@@ -911,6 +914,12 @@ def dump_file(violations, quiet, path, /):
             print(fmt(lineno, code, msg))
 
 
+def dump_version():
+    with pathlib.Path(__file__).with_name("pyproject.toml").open("rb") as f:
+        version = tomllib.load(f)["project"]["version"]
+        print("sphinx-linter {}".format(version))
+
+
 def main():
     logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 
@@ -955,11 +964,23 @@ def main():
         default=[],
         help="Violation codes to disable",
     )
+    parser.add_argument(
+        "--version",
+        action="store_const",
+        const=True,
+        default=False,
+        help="Print version and exit",
+    )
 
     # Disable SyntaxWarnings to reduce output noise from python parser
     #   for example: SyntaxWarning: invalid escape sequence
     warnings.simplefilter("ignore", SyntaxWarning)
     args = parser.parse_args()
+
+    if args.version:
+        dump_version()
+        return 0
+
     violations = Violations(enable=args.enable, disable=args.disable)
     for path in walk(args.files, args.ignore):
         dump_file(violations, args.quiet, path)
