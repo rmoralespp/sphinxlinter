@@ -390,9 +390,9 @@ class Violations:
         for doc_returns in parsed_docs.returns:
             section_key, sep, doc_return_type, description, section_key_ctx, order = doc_returns
 
-            # Malformed return:  missing sep/type/description(when required) or invalid context
+            # Malformed: missing sep/type/description(when required) or invalid context
             if not sep or section_key_ctx:
-                # Missing ':' separator or invalid context (section_key_ctx is True)
+                # Missing sep or invalid context (section_key_ctx is True)
                 yield cls.DOC002, (section_key,)
             elif section_key in return_set and not description:
                 # :return:´ without description
@@ -450,7 +450,7 @@ class Violations:
             missing_desc = section_key in class_var_set and not description
             missing_type = section_key == vartype_key and not kind
 
-            # Malformed var: missing sep/name/description(when required)/type(when required)
+            # Malformed: missing sep/name/description(when required)/type(when required)
             if not (sep and name) or missing_type or missing_desc:
                 yield cls.DOC002, (section_key,)
             if kind and not cls.is_valid_type_hint(kind):  # Invalid type syntax
