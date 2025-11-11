@@ -1,12 +1,16 @@
 ## Releases
 
+v0.1.1 (2025-11-11)
+
+- **Fixed:** Option --version when used with sphinx-linter as installed package.
+
 ### v0.1.0 (2025-11-11)
 
 - **Added:** Rule `DOC012` to check for leading in first non-blank line of docstring.
 - **Added:** Rule `DOC106` to check parameter order mismatch with function signature.
 - **Added:** Rule `DOC107` to check missing parameters in docstring. (by default disabled)
 - **Added:** Add CLI parameter `--version`
-- **Added:** Allow read custom configuration from `configuration from `pyproject.toml` files.`.
+- **Added:** Allow read custom configuration from `configuration from `pyproject.toml` files`.
 
 ### v0.0.17 (2025-11-07)
 

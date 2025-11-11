@@ -97,10 +97,10 @@ def dummy():
     @pytest.mark.parametrize(
         "docstring, expected",
         (
-                (None, None),
-                ("", None),
-                (" a\nb \n\n ", " a\nb \n\n "),
-                (" a \n:b: \n\n", " a \n"),
+            (None, None),
+            ("", None),
+            (" a\nb \n\n ", " a\nb \n\n "),
+            (" a \n:b: \n\n", " a \n"),
         ),
     )
     def test_get_summary(self, docstring, expected):
@@ -216,9 +216,9 @@ def dummy():
     @pytest.mark.parametrize(
         "enable,disable,expected",
         (
-                ((1,), (1,), frozenset()),
-                ((1,), (2,), frozenset((1,))),
-                ((1, 2, 3), (2,), frozenset((1, 3))),
+            ((1,), (1,), frozenset()),
+            ((1,), (2,), frozenset((1,))),
+            ((1, 2, 3), (2,), frozenset((1, 3))),
         ),
     )
     def test_disable(self, enable, disable, expected):
