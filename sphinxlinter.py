@@ -210,6 +210,7 @@ class Violations:
     DOC104 = (True, "DOC104", "Parameter type mismatch with annotation ({!r} != {!r})")
     DOC105 = (True, "DOC105", "Duplicated parameter ({!r})")
     DOC106 = (True, "DOC106", "Parameter order mismatch with signature")
+    DOC107 = (False, "DOC107", "Missing parameter in docstring ({!r})") # Disabled by default
 
     # DOC2xx: Return issues
     DOC201 = (True, "DOC201", "Return documented but function has no return statement")
@@ -373,6 +374,14 @@ class Violations:
         documented_defined = [n for n in documented if n in parsed_params]
         if defined_documented != documented_defined:
             yield cls.DOC106, ()
+
+        # Check for missing parameter keys in docstring
+        ignored = frozenset(("self", "cls", "args", "kwargs"))  # Common ignored parameter names
+        if documented:
+            # Only check for missing parameters if there is at least one documented parameter
+            missing = sorted((parsed_params.keys() - ignored) - frozenset(documented))
+            for name in missing:
+                yield cls.DOC107, (name,)
 
     @classmethod
     def validate_return(cls, parsed_docs, parsed_return, is_implemented, /):

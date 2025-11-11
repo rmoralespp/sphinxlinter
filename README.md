@@ -207,45 +207,46 @@ path/to/file.py:LINE-NUMBER: [CODE] Description of the violation.
 
 ### DOC1xx — Parameters
 
-| Code   | Description                               | Purpose                                   |
-|--------|-------------------------------------------|-------------------------------------------|
-| DOC101 | Parameter documented but not in signature | Detects undocumented or extra parameters. |
-| DOC102 | Invalid parameter type syntax             | Enforces valid Python type hints.         |
-| DOC103 | Parameter type already in signature       | Avoids redundant type info.               |
-| DOC104 | Parameter type mismatch with annotation   | Ensures consistency with annotations.     |
-| DOC105 | Duplicated parameter                      | Prevents repetition.                      |
-| DOC106 | Parameter order mismatch with signature   | Validates parameter order.                |
+| Code   | Description                               | Purpose                                   | Enabled by Default |
+|--------|-------------------------------------------|-------------------------------------------|--------------------|
+| DOC101 | Parameter documented but not in signature | Detects undocumented or extra parameters. | Yes                |
+| DOC102 | Invalid parameter type syntax             | Enforces valid Python type hints.         | Yes                |
+| DOC103 | Parameter type already in signature       | Avoids redundant type info.               | Yes                |
+| DOC104 | Parameter type mismatch with annotation   | Ensures consistency with annotations.     | Yes                |
+| DOC105 | Duplicated parameter                      | Prevents repetition.                      | Yes                |
+| DOC106 | Parameter order mismatch with signature   | Validates parameter order.                | Yes                |
+| DOC107 | Missing parameter in docstring            | Ensures all parameters are documented     | No                 |
 
 ---
 
 ### DOC2xx — Returns
 
-| Code   | Description                                            | Purpose                                 |
-|--------|--------------------------------------------------------|-----------------------------------------|
-| DOC201 | Return documented but function has no return statement | Detects unnecessary return sections.    |
-| DOC202 | Invalid return type syntax                             | Enforces valid type expressions.        |
-| DOC203 | Return type already in signature                       | Avoids redundancy.                      |
-| DOC204 | Return type mismatch with annotation                   | Validates against function annotations. |
-| DOC205 | Duplicated return section                              | Prevents duplication.                   |
+| Code   | Description                                            | Purpose                                 | Enabled by Default |
+|--------|--------------------------------------------------------|-----------------------------------------|--------------------|
+| DOC201 | Return documented but function has no return statement | Detects unnecessary return sections.    | Yes                |
+| DOC202 | Invalid return type syntax                             | Enforces valid type expressions.        | Yes                |
+| DOC203 | Return type already in signature                       | Avoids redundancy.                      | Yes                |
+| DOC204 | Return type mismatch with annotation                   | Validates against function annotations. | Yes                |
+| DOC205 | Duplicated return section                              | Prevents duplication.                   | Yes                |
 
 ---
 
 ### DOC3xx — Raises
 
-| Code   | Description                   | Purpose                                |
-|--------|-------------------------------|----------------------------------------|
-| DOC302 | Invalid exception type syntax | Ensures valid Python exception syntax. |
-| DOC305 | Duplicated exception type     | Prevents redundant entries.            |
+| Code   | Description                   | Purpose                                | Enabled by Default |
+|--------|-------------------------------|----------------------------------------|--------------------|
+| DOC302 | Invalid exception type syntax | Ensures valid Python exception syntax. | Yes                |
+| DOC305 | Duplicated exception type     | Prevents redundant entries.            | Yes                |
 
 ---
 
 ### DOC4xx — Variables
 
-| Code   | Description                               | Purpose                           |
-|--------|-------------------------------------------|-----------------------------------|
-| DOC402 | Invalid variable type syntax              | Enforces valid Python type hints. |
-| DOC403 | Variable name contains invalid whitespace | Ensures valid identifiers.        |
-| DOC405 | Duplicated variable                       | Prevents repetition.              |
+| Code   | Description                               | Purpose                           | Enabled by Default |
+|--------|-------------------------------------------|-----------------------------------|--------------------|
+| DOC402 | Invalid variable type syntax              | Enforces valid Python type hints. | Yes                |
+| DOC403 | Variable name contains invalid whitespace | Ensures valid identifiers.        | Yes                |
+| DOC405 | Duplicated variable                       | Prevents repetition.              | Yes                |
 
 ---
 
