@@ -30,7 +30,9 @@ default_ignore_dirs = (
     "__pycache__",  # Python cache
 )
 
+# ============================================================================
 # Docstring sections: https://www.sphinx-doc.org/en/master/usage/domains/python.html#info-field-lists
+# ============================================================================
 ptype_key = "type"
 rtype_key = "rtype"
 param_set = {"param", "parameter", "arg", "argument", "keyword", "key"}
@@ -38,18 +40,21 @@ return_set = {"return", "returns"}
 raises_set = {"raises", "raise", "except", "exception"}
 
 # Although Sphinx does not currently explain this distinction, its syntax was directly inherited from
-# Epydoc (https://epydoc.sourceforge.net/manual-fields.html#variables),
-# so it is generally understood that:
-# - "ivar": instance variable
-# - "cvar": class variable
-# - "var": variable (global or module-level variable)
+# Epydoc (https://epydoc.sourceforge.net/manual-fields.html#variables), so it is generally understood that:
+# - ivar: instance variable
+# - cvar: class variable
+# - var: variable (global or module-level variable)
 class_var_set = {"ivar", "cvar"}
 module_var_key = "var"
 vartype_key = "vartype"
 ignore_set = {"meta"}  # At this moment, it's ignored
 
+# Sections that define types
 types_set = {ptype_key, rtype_key, vartype_key}  # Sections that define types
 
+# ============================================================================
+# Regular expressions for parsing docstrings:
+# ============================================================================
 # Summary (everything before the first section or the end of the string)
 summary_regex = re.compile(r'^(.*?)(?=^:|\Z)', flags=re.DOTALL | re.MULTILINE)
 # Section (start with ':' and end before next ':' at start of line or end of string)
@@ -61,17 +66,15 @@ blank_lines_regex = re.compile("(?:^[ \t]*\r?\n){2,}(?=[^\r\n])", flags=re.MULTI
 # Docstring starting or ending with only quotes lines
 quotes_starts_regex = re.compile(r'^"+\s*$')
 quotes_ends_regex = re.compile(r'^\s*"+$')
-
-# leading whitespaces matcher (in first non-blank line of docstring)
-leading_whitespaces_regex = re.compile(r'^[ \t]+')
+# Leading whitespaces matcher (ignoring break-line)
+leading_ws_regex = re.compile('^[ \t]+')
 
 # ----------------------------------
 # Bad whitespace in section left-side:
 # ----------------------------------
 # - consecutive whitespace (anywhere)
-# - leading whitespace  (ignore break-line)
-# - trailing whitespace (ignore break-line)
-ws_left_err = re.compile('(\\s{2,}|^[ \t]+|[ \t]+$)').search
+# - leading/trailing whitespace (ignore break-line)
+section_ws_left_err = re.compile('(\\s{2,}|^[ \t]+|[ \t]+$)').search
 
 # ----------------------------------
 # Bad whitespace in section right-side (type):
@@ -79,7 +82,7 @@ ws_left_err = re.compile('(\\s{2,}|^[ \t]+|[ \t]+$)').search
 # - missing leading whitespace (starts with non-space)
 # - consecutive whitespace (anywhere)
 # - trailing whitespace (ignore break-line)
-ws_right_type_err = re.compile('(^\\S|\\s{2,}|[ \t]+$)').search
+section_ws_right_type_err = re.compile('(^\\S|\\s{2,}|[ \t]+$)').search
 
 # ----------------------------------
 # Bad whitespace in section right-side (description):
@@ -87,7 +90,7 @@ ws_right_type_err = re.compile('(^\\S|\\s{2,}|[ \t]+$)').search
 # - missing leading whitespace (starts with non-space)
 # - starts with 2+ whitespace (ignore break-line)
 # - trailing whitespace (ignore break-line)
-ws_right_desc_err = re.compile('(^\\S|^[ \t]{2,}|[ \t]+$)').search
+section_ws_right_desc_err = re.compile('(^\\S|^[ \t]{2,}|[ \t]+$)').search
 
 
 class NodeTypes:
@@ -252,13 +255,13 @@ class Violations:
     def validate_whitespaces(cls, parsed, /):
         lines = parsed.rawdocs.splitlines() if parsed.rawdocs else []
         first = lines[0] if lines else ""
-        # When first-line is not blank, cannot use 'parsed.doc' because inspect.cleandoc performed 'lstrip' on it.
-        if not first.strip() and parsed.docs:  # first line is blank → use cleaned docstring
+        # Check leading whitespaces in the first non-blank line:
+        # - first line is not blank → use raw docstring first line ('parsed.docs' removed leading spaces)
+        # - first line is blank → use cleaned docstring first line (to find the first non-blank line)
+        if not first.strip() and parsed.docs:
             lines = parsed.docs.splitlines()
             first = lines[0] if lines else ""
-
-        # Check leading whitespaces in the first line of the docstring (not blank)
-        if first and not first.isspace() and leading_whitespaces_regex.search(first):
+        if first and not first.isspace() and leading_ws_regex.search(first):
             yield cls.DOC012, (first,)
 
         for section_def in parsed.bad_whitespaces_def:
@@ -548,14 +551,14 @@ def fetch_bad_ws_definitions(section, section_key, sep, a_raw, b_raw, /):
     """
 
     if section_key in types_set:
-        if ws_left_err(a_raw) or ws_right_type_err(b_raw):  # Check left-side and right-side type
+        if section_ws_left_err(a_raw) or section_ws_right_type_err(b_raw):  # Check left-side and right-side type
             yield section
 
-    elif ws_left_err(a_raw):
+    elif section_ws_left_err(a_raw):
         # Reconstruct section definition with only left-side
         yield ":{}{}".format(a_raw, ":" if sep else "")
 
-    elif ws_right_desc_err(b_raw):  # Check right-side description
+    elif section_ws_right_desc_err(b_raw):  # Check right-side description
         yield section
 
 

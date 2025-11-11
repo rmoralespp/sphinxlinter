@@ -125,20 +125,20 @@ path/to/file.py:LINE-NUMBER: [CODE] Description of the violation.
 
 ### DOC0xx — Structure
 
-| Code   | Description                                      | Purpose                                                                          |
-|--------|--------------------------------------------------|----------------------------------------------------------------------------------|
-| DOC001 | Invalid docstring section                        | Detects unsupported Sphinx fields.                                               |
-| DOC002 | Malformed section                                | Ensures valid field list syntax.                                                 |
-| DOC003 | Missing blank line after docstring               | Improves readability.                                                            |
-| DOC004 | Missing blank line between summary and sections  | Enforces structure consistency.                                                  |
-| DOC005 | Too many consecutive blank lines                 | Prevents unnecessary whitespace.                                                 |
-| DOC006 | Trailing empty lines                             | Keeps docstrings compact.                                                        |
-| DOC007 | Misplaced section                                | Enforces section order and grouping.                                             |
-| DOC008 | One-line docstring should end with a period      | Complies with [PEP 257](https://peps.python.org/pep-0257/#one-line-docstrings).  |
-| DOC009 | Docstring must not use more than 3 double quotes | Promotes consistent quoting.                                                     |
-| DOC010 | Section definition contains invalid whitespace   | Ensures proper formatting.                                                       |
-| DOC011 | Trailing non-empty lines after last section      | Maintains clean endings.                                                         |
-| DOC012 | "Leading whitespaces in first non-blank line     | Ensures no leading spaces before docstring content.                              |
+| Code   | Description                                       | Purpose                                                                         |
+|--------|---------------------------------------------------|---------------------------------------------------------------------------------|
+| DOC001 | Invalid docstring section                         | Detects unknown Sphinx fields.                                                  |
+| DOC002 | Malformed section                                 | Ensures valid field list syntax.                                                |
+| DOC003 | Missing blank line after docstring                | Improves readability.                                                           |
+| DOC004 | Missing blank line between summary and sections   | Enforces structure consistency.                                                 |
+| DOC005 | Too many consecutive blank lines                  | Prevents unnecessary whitespace.                                                |
+| DOC006 | Trailing empty lines                              | Keeps docstrings compact.                                                       |
+| DOC007 | Misplaced section                                 | Enforces section order and grouping.                                            |
+| DOC008 | One-line docstring should end with a period       | Complies with [PEP 257](https://peps.python.org/pep-0257/#one-line-docstrings). |
+| DOC009 | Docstring must not use more than 3 double quotes  | Promotes consistent quoting.                                                    |
+| DOC010 | Section definition contains invalid whitespace    | Ensures proper formatting.                                                      |
+| DOC011 | Trailing non-empty lines after last section       | Maintains clean endings.                                                        |
+| DOC012 | Leading whitespaces in first non-blank line       | Ensures no leading spaces before docstring content.                             |
 ---
 
 > [!NOTE]
