@@ -752,7 +752,7 @@ def checker(node, violations, filename, /):
     parsed = parse_docs(node, filename)
     lineno = parsed.docs_ini_lineno
 
-    if parsed.kind == "function":
+    if parsed.kind == NodeTypes.FUNCTION:
         func_params = dict(get_params(node))
         func_has_returns = has_return_or_yield(node)
         func_is_implemented = not is_not_implemented(node, rawdocs=parsed.rawdocs)
