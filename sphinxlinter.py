@@ -986,7 +986,7 @@ def load_config(config_file, check_files, /):
 
     for path in paths:
         try:
-            data = tomllib.loads(path.read_text())
+            data = tomllib.loads(path.read_text(encoding="utf-8"))
         except (tomllib.TOMLDecodeError, PermissionError):
             continue  # Invalid TOML or inaccessible file, skip it
         else:

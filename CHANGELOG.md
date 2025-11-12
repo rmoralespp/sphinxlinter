@@ -3,6 +3,7 @@
 - **Changed:** Python 3.9/3.10 are supported again, but `pyproject.toml` configuration reading is disabled for this version.
 - **Changed:** Update README.md to reflect Python version support changes.
 - **Fixed:** Ruff warnings
+- **Fixed:** Encoding warnings when reading files.
 
 ### v0.1.2 (2025-11-11)
 
