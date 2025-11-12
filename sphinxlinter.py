@@ -13,9 +13,21 @@ import os.path
 import pathlib
 import re
 import sys
-import tomllib
 import typing
 import warnings
+
+try:
+    import tomllib
+except ImportError:
+    # Python < 3.11, no tomllib available
+    tomllib = None  # type: ignore
+
+
+APP_NAME = "sphinx-linter"
+
+# ============================================================================
+# Default ignored directories for file discovery
+# ============================================================================
 
 # Ignore, at least, these directory basenames (default directories to ignore).
 default_ignore_dirs = (
@@ -696,7 +708,7 @@ def parse_docs(node, filename, /):
         after_lineno = docs_end_lineno + 1
         # Use linecache instead of ast to get the next line after the docstring correctly, because ast skips comments.
         after_line = linecache.getline(filename, after_lineno)
-        missing_blank_line_after = after_line.strip() != ""
+        missing_blank_line_after = bool(after_line.strip())  # True if the line is not blank
     else:
         missing_blank_line_after = False
 
@@ -925,12 +937,15 @@ def dump_file(violations, quiet, path, /):
 
 def dump_version():
     path = pathlib.Path(__file__).with_name("pyproject.toml")
-    if path.exists():  # standalone script
+    if tomllib and path.exists():  # standalone script
         with path.open("rb") as f:
             version = tomllib.load(f)["project"]["version"]
     else:  # installed package
-        version = importlib.metadata.version("sphinx-linter")
-    print("sphinx-linter {}".format(version))
+        try:
+            version = importlib.metadata.version(APP_NAME)
+        except importlib.metadata.PackageNotFoundError:
+            version = "unknown"
+    print("{} {}".format(APP_NAME, version))
 
 
 def get_config_start_dir(paths, /):
@@ -952,6 +967,12 @@ def load_config(config_file, check_files, /):
     """
 
     config = dict()
+
+    if not tomllib:
+        msg = "tomllib not available; config files cannot be loaded. Please use Python 3.11+ to enable this feature."
+        logging.warning(msg)
+        return config
+
     if config_file:
         paths = (pathlib.Path(config_file),)
     else:
@@ -965,9 +986,9 @@ def load_config(config_file, check_files, /):
         except (tomllib.TOMLDecodeError, PermissionError):
             continue  # Invalid TOML or inaccessible file, skip it
         else:
-            if "tool" in data and "sphinx-linter" in data["tool"]:
+            if "tool" in data and APP_NAME in data["tool"]:
                 # Only use if it has [tool.sphinx-linter] section
-                config = data["tool"]["sphinx-linter"]
+                config = data["tool"][APP_NAME]
                 break
     return config
 

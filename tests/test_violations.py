@@ -237,7 +237,6 @@ def foo():
     assert result == expected
 
 
-
 def test_DOC004(violations):
     content = '''
 def foo(a):

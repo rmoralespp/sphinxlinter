@@ -6,10 +6,12 @@ readme = "README.md"
 license-files = ["LICENSE"]
 keywords = ["python", "documentation", "linter", "developer-tools", "code-quality", "docstrings"]
 authors = [{ name = "rmoralespp", email = "rmoralespp@gmail.com" }]
-requires-python = ">=3.11"
+requires-python = ">=3.9"
 classifiers = [
     "Programming Language :: Python",
     "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
@@ -57,6 +59,7 @@ exclude_also = [
 
 [tool.ruff]
 line-length = 120
+preview = true
 
 [tool.ruff.lint.isort]
 lines-between-types = 1
@@ -84,7 +87,6 @@ select = [
     "D210", # No whitespaces allowed surrounding docstring text
     "D211", # No blank lines allowed before class docstring
     "D213", # Multi-line docstring summary should start at the second line
-    "D300", # Use """triple double quotes"""
     "D402",  # First line should not be the function's signature
     "D403", # First word of the first line should be properly capitalized
     "D419", # Docstring is empty
@@ -166,3 +168,4 @@ ignore = [
     "PT011", # `pytest.raises(ValueError)` is too broad, set the `match` parameter or use a more specific exception
     "PT019", # Fixture `_` without value is injected as parameter, use `@pytest.mark.usefixtures` instead
 ]
+

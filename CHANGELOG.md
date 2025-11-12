@@ -1,5 +1,9 @@
 ## Releases
 
+- **Changed:** Python 3.9/3.10 are supported again, but `pyproject.toml` configuration reading is disabled for this version.
+- **Changed:** Update README.md to reflect Python version support changes.
+- **Fixed:** Ruff warnings
+
 ### v0.1.2 (2025-11-11)
 
 - **Changed:** Limit minimum Python version to 3.11 because `tomllib` is introduced in this version.

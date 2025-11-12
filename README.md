@@ -38,7 +38,8 @@ Specifically, it focuses on:
 
 ## 📦 Installation
 
-Requires **Python ≥ 3.11**.
+Requires **Python ≥ 3.9**, but **Python ≥ 3.11** is recommended to allow loading configuration files with
+`tomlib` from the standard library.
 
 To install via `pip`, run:
 
@@ -119,6 +120,7 @@ If no configuration file is found, the linter runs with its default settings.
 > **Also ignored if:**
 > - The `--isolated` flag is set.
 > - A specific configuration file is provided via `--config`.
+> - Python version is below 3.11 (no `tomllib` support).
 
 
 **Example configuration:**
