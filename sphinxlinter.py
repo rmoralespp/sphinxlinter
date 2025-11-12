@@ -909,14 +909,14 @@ def walk(paths, ignore_dirs, /):
             # return it even if it does not end with .py
             yield path
         elif path.is_dir():
-            for root, directories, files in path.walk():
+            for root, directories, files in os.walk(path):
                 # Remove ignored directories
                 for candidate in frozenset(directories).intersection(ignore_dirs):
                     directories.remove(candidate)
 
                 for name in files:
                     if name.endswith(suffix):
-                        yield root / name
+                        yield os.path.join(root, name)
         else:
             logging.warning("Unknown file: %s", path)
 
