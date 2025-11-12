@@ -1,5 +1,9 @@
 ## Releases
 
+### v0.1.5 (2025-11-12)
+
+- **Fixed:** In certain cases, improper handling of empty docstrings causes unexpected errors.
+
 ### v0.1.4 (2025-11-12)
 
 - **Added:** Log unknown passed files.

@@ -700,7 +700,7 @@ def parse_docs(node, filename, /):
         # Check for non-blank lines after the last section. (Only for type sections that cannot have a description)
         non_blank_end_lines = any(line.strip() for line in b_raw.splitlines()[1:])  # Non-empty lines
 
-    if docs:
+    if docs is not None:  # can be empty docstring
         summary = get_summary(docs)
         first = node.body[0]
         docs_ini_lineno, docs_end_lineno = (first.lineno, first.end_lineno)
@@ -853,7 +853,7 @@ def checker(node, violations, filename, /):
     """
     Explore the given AST node and yield each violation found.
 
-    :param ast.AST node: Root node to explore.
+    :param ast.Function node: Root node to explore.
     :param Violations violations: Violations instance with enabled/disabled rules.
     :param str filename: Filename to check.
 
@@ -862,18 +862,19 @@ def checker(node, violations, filename, /):
     """
 
     parsed_docs = parse_docs(node, filename)
-    lineno = parsed_docs.docs_ini_lineno
+    lineno_docs = parsed_docs.docs_ini_lineno
+    if lineno_docs is not None:  # Node has docstring
 
-    if parsed_docs.kind == NodeTypes.FUNCTION:
-        func_params_props = dict(get_params_props(node))
-        func_return_props = get_return_props(node, has_return_or_yield(node))
-        func_is_implemented = not is_not_implemented(node, rawdocs=parsed_docs.rawdocs)
-        parsed_func = ParsedFuncDef(func_params_props, func_return_props, func_is_implemented)
-    else:  # ClassDef or Module
-        parsed_func = None
+        if parsed_docs.kind == NodeTypes.FUNCTION:
+            func_params_props = dict(get_params_props(node))
+            func_return_props = get_return_props(node, has_return_or_yield(node))
+            func_is_implemented = not is_not_implemented(node, rawdocs=parsed_docs.rawdocs)
+            parsed_func = ParsedFuncDef(func_params_props, func_return_props, func_is_implemented)
+        else:  # ClassDef or Module
+            parsed_func = None
 
-    for (code, msg), ctx in violations.discover(parsed_docs, parsed_func):
-        yield (lineno, code, msg, ctx)
+        for (code, msg), ctx in violations.discover(parsed_docs, parsed_func):
+            yield (lineno_docs, code, msg, ctx)
 
 
 def walk_module(quiet, data, filename, /):

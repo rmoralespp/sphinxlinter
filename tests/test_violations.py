@@ -663,7 +663,7 @@ def foo(a):
 
     if "\n" in docs:
         # Raises DOC006 for trailing empty lines but not DOC012
-        expected = ((None, 'DOC006', 'Trailing empty lines', ()),)
+        expected = ((3, 'DOC006', 'Trailing empty lines', ()),)
     else:
         expected = ()
     result = tuple(chequer(content, violations))
