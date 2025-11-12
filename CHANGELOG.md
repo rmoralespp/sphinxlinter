@@ -1,5 +1,7 @@
 ## Releases
 
+- **Added:** Log unknown passed files.
+
 ### v0.1.3 (2025-11-12)
 
 - **Changed:** Python 3.9/3.10 are supported again, but `pyproject.toml` configuration reading is disabled for this version.

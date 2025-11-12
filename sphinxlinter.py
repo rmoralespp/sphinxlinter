@@ -917,6 +917,8 @@ def walk(paths, ignore_dirs, /):
                 for name in files:
                     if name.endswith(suffix):
                         yield root / name
+        else:
+            logging.warning("Unknown file: %s", path)
 
 
 def dump_statistics(violations, /):
