@@ -58,6 +58,9 @@ exclude_also = [
 [tool.ruff]
 line-length = 120
 
+[tool.ruff.lint.isort]
+lines-between-types = 1
+
 [tool.ruff.lint]
 select = [
     # pyflakes
@@ -85,6 +88,7 @@ select = [
     "D402",  # First line should not be the function's signature
     "D403", # First word of the first line should be properly capitalized
     "D419", # Docstring is empty
+    "D300", # Use """triple double quotes"""
 
     # pyupgrade
     "UP003", # Use str instead of type(...)
@@ -141,7 +145,7 @@ ignore = [
     # Disabled by default. :)
     # https://github.com/gforcada/flake8-builtins/pull/76
     "A003", # Class attribute `...` is shadowing a python builtin
-    "A005", # Module "xxx" is shadowing a Python buildint module
+    "A005", # Module `...` is shadowing a Python builtin module
 
     "B905", # `zip()` without an explicit `strict=` parameter
 
