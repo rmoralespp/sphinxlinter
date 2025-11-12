@@ -629,6 +629,20 @@ def foo(a):
     assert result == expected
 
 
+def test_DOC012_oneline_docstring(violations):
+    content = '''
+def foo(a):
+    """ Title.
+
+    :param str a: description
+    """
+'''
+
+    expected = ((3, 'DOC012', 'Leading whitespaces in first non-blank line ({!r})', (' Title.',)),)
+    result = tuple(chequer(content, violations))
+    assert result == expected
+
+
 def test_DOC012_ignore_when_not_docstring(violations):
     content = '''
 def foo(a):
@@ -640,27 +654,18 @@ def foo(a):
     assert result == expected
 
 
-def test_DOC012_ignore_if_blank_docstring(violations):
-    content = '''
+@pytest.mark.parametrize("docs", ["", " ", "  ", "  \n"])
+def test_DOC012_ignore_if_blank_docstring(docs, violations):
+    content = f'''
 def foo(a):
-    """  """
+    """{docs}"""
 '''
 
-    expected = ()
-    result = tuple(chequer(content, violations))
-    assert result == expected
-
-
-def test_DOC012_oneline_docstring(violations):
-    content = '''
-def foo(a):
-    """ Title.
-
-    :param str a: description
-    """
-'''
-
-    expected = ((3, 'DOC012', 'Leading whitespaces in first non-blank line ({!r})', (' Title.',)),)
+    if "\n" in docs:
+        # Raises DOC006 for trailing empty lines but not DOC012
+        expected = ((None, 'DOC006', 'Trailing empty lines', ()),)
+    else:
+        expected = ()
     result = tuple(chequer(content, violations))
     assert result == expected
 

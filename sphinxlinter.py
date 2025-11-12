@@ -22,7 +22,6 @@ except ImportError:
     # Python < 3.11, no tomllib available
     tomllib = None  # type: ignore
 
-
 APP_NAME = "sphinx-linter"
 
 # ============================================================================
@@ -80,8 +79,8 @@ blank_lines_regex = re.compile("(?:^[ \t]*\r?\n){2,}(?=[^\r\n])", flags=re.MULTI
 # Docstring starting or ending with only quotes lines
 quotes_starts_regex = re.compile(r'^"+\s*$')
 quotes_ends_regex = re.compile(r'^\s*"+$')
-# Leading whitespaces matcher (ignoring break-line)
-leading_ws_regex = re.compile('^[ \t]+')
+# Leading whitespaces matcher: line starts with spaces/tabs followed by non-space
+leading_ws_regex = re.compile('^[ \t]+\\S+')
 
 # ----------------------------------
 # Bad whitespace in section left-side:
@@ -193,10 +192,11 @@ class ParsedDocs(typing.NamedTuple):
 
 
 class Violations:
-    # Rules definition:
-    #   Enabled, Code, Message
-
+    # ----------------------------------------------------------------------------
+    # Rules definition: Enabled | Code | Message
+    # ----------------------------------------------------------------------------
     # DOC0xx: Docstring section issues
+    # ----------------------------------------------------------------------------
     DOC001 = (True, "DOC001", "Invalid docstring section ({!r})")
     DOC002 = (True, "DOC002", "Malformed section ({!r})")
     DOC003 = (True, "DOC003", "Missing blank line after docstring")
@@ -214,8 +214,9 @@ class Violations:
     DOC010 = (True, "DOC010", "Section definition contains invalid whitespace ({!r})")
     DOC011 = (True, "DOC011", "Trailing non-empty lines after last section")
     DOC012 = (True, "DOC012", "Leading whitespaces in first non-blank line ({!r})")
-
+    # ----------------------------------------------------------------------------
     # DOC1xx: Parameter issues
+    # ----------------------------------------------------------------------------
     DOC101 = (True, "DOC101", "Parameter documented but not in signature ({!r})")
     DOC102 = (True, "DOC102", "Invalid parameter type syntax ({!r})")
     DOC103 = (True, "DOC103", "Parameter type already in signature ({!r})")
@@ -223,19 +224,22 @@ class Violations:
     DOC105 = (True, "DOC105", "Duplicated parameter ({!r})")
     DOC106 = (True, "DOC106", "Parameter order mismatch with signature")
     DOC107 = (False, "DOC107", "Missing parameter in docstring ({!r})")  # Disabled by default
-
+    # ----------------------------------------------------------------------------
     # DOC2xx: Return issues
+    # ----------------------------------------------------------------------------
     DOC201 = (True, "DOC201", "Return documented but function has no return statement")
     DOC202 = (True, "DOC202", "Invalid return type syntax ({!r})")
     DOC203 = (True, "DOC203", "Return type already in signature ({!r})")
     DOC204 = (True, "DOC204", "Return type mismatch with annotation ({!r} != {!r})")
     DOC205 = (True, "DOC205", "Duplicated return section ({!r})")
-
+    # ----------------------------------------------------------------------------
     # DOC3xx: Raises issues
+    # ----------------------------------------------------------------------------
     DOC302 = (True, "DOC302", "Invalid exception type syntax ({!r})")
     DOC305 = (True, "DOC305", "Duplicated exception type ({!r})")
-
+    # ----------------------------------------------------------------------------
     # DOC4xx: Variable issues
+    # ----------------------------------------------------------------------------
     DOC402 = (True, "DOC402", "Invalid variable type syntax ({!r})")
     DOC403 = (True, "DOC403", "Variable name contains invalid whitespace ({!r})")
     DOC405 = (True, "DOC405", "Duplicated variable ({!r})")
@@ -303,7 +307,7 @@ class Violations:
         if not first.strip() and parsed_docs.docs:
             lines = parsed_docs.docs.splitlines()
             first = lines[0] if lines else ""
-        if first and not first.isspace() and leading_ws_regex.search(first):
+        if first and leading_ws_regex.search(first):
             yield cls.DOC012, (first,)
 
         for section_def in parsed_docs.bad_whitespaces_def:
@@ -381,10 +385,10 @@ class Violations:
         # Check parameter order ignoring missing/extra parameters
         orderby = operator.attrgetter("order")
         # Ignore parameters not documented
-        defined_documented = [n.name for n in sorted(parsed_params.values(), key=orderby) if n.name in documented]
+        defined_documented = (n.name for n in sorted(parsed_params.values(), key=orderby) if n.name in documented)
         # Ignore documented parameters not in the function definition
-        documented_defined = [n for n in documented if n in parsed_params]
-        if defined_documented != documented_defined:
+        documented_defined = (n for n in documented if n in parsed_params)
+        if tuple(defined_documented) != tuple(documented_defined):
             yield cls.DOC106, ()
 
         # Check for missing parameter keys in docstring
@@ -419,7 +423,7 @@ class Violations:
                 # Missing sep or invalid context (section_key_ctx is True)
                 yield cls.DOC002, (section_key,)
             elif section_key in return_set and not description:
-                # :return:´ without description
+                # ´:return:´ without description
                 yield cls.DOC002, (section_key,)
             elif section_key == rtype_key and not doc_return_type:  # ´:rtype:´ without type
                 yield cls.DOC002, (section_key,)
