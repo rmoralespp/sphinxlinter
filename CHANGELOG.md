@@ -1,5 +1,7 @@
 ## Releases
 
+### v0.1.4 (2025-11-12)
+
 - **Added:** Log unknown passed files.
 - **Fixed:** Python 3.11 compatibility issues in walking directories.
 
