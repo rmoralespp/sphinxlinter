@@ -916,7 +916,7 @@ def walk(paths, ignore_dirs, /):
 
                 for name in files:
                     if name.endswith(suffix):
-                        yield os.path.join(root, name)
+                        yield pathlib.Path(os.path.join(root, name))
         else:
             logging.warning("Unknown file: %s", path)
 
