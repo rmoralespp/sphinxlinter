@@ -1,5 +1,7 @@
 ## Releases
 
+- **Fixed:** Avoid always logs warnings when using the `--quiet` option.
+
 ### v0.1.5 (2025-11-12)
 
 - **Fixed:** In certain cases, improper handling of empty docstrings causes unexpected errors.

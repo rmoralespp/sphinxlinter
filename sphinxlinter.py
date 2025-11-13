@@ -901,7 +901,7 @@ def walk_module(quiet, data, filename, /):
                 yield node
 
 
-def walk(paths, ignore_dirs, /):
+def walk(paths, ignore_dirs, quiet, /):
     suffix = ".py"
     for item in paths:
         path = pathlib.Path(item)
@@ -918,7 +918,7 @@ def walk(paths, ignore_dirs, /):
                 for name in files:
                     if name.endswith(suffix):
                         yield pathlib.Path(os.path.join(root, name))
-        else:
+        if not quiet:  # If False, print warnings to stderr.
             logging.warning("Unknown file: %s", path)
 
 
@@ -961,7 +961,7 @@ def get_config_start_dir(paths, /):
     return os.path.commonpath(parents)
 
 
-def load_config(config_file, check_files, /):
+def load_config(config_file, check_files, quiet, /):
     """
     Load configuration from 'pyproject.toml' if available.
 
@@ -970,14 +970,17 @@ def load_config(config_file, check_files, /):
 
     :param str | None config_file: Path to 'pyproject.toml' file.
     :param list[str] check_files: List of files/directories to check.
+    :param bool quiet: If False, print warnings to stderr.
     :rtype: dict
     """
 
     config = dict()
 
-    if not tomllib:
+    if not tomllib and not quiet:
         msg = "tomllib not available; config files cannot be loaded. Please use Python 3.11+ to enable this feature."
         logging.warning(msg)
+        return config
+    elif not tomllib:
         return config
 
     if config_file:
@@ -1077,14 +1080,14 @@ def main():
         dump_version()
         return 0
 
-    config = dict() if args.isolated else load_config(args.config, args.files)
+    config = dict() if args.isolated else load_config(args.config, args.files, args.quiet)
     # CLI Arguments have precedence over config file settings
     enable = args.enable or config.get("enable", [])
     disable = args.disable or config.get("disable", [])
     ignore = args.ignore or config.get("ignore", default_ignore_dirs)
 
     violations = Violations(enable=enable, disable=disable)
-    for path in walk(args.files, ignore):
+    for path in walk(args.files, ignore, args.quiet):
         dump_file(violations, args.quiet, path)
 
     if args.statistics and violations.stats:

@@ -351,7 +351,7 @@ class TestLoadConfig:
             'disable = ["DOC003"]',
         )
         config_file = dump_config(tmp_dirpath, config_lines)
-        result = sphinxlinter.load_config(str(config_file), [])
+        result = sphinxlinter.load_config(str(config_file), [], False)
 
         expected = {"enable": ["DOC001", "DOC002"], "disable": ["DOC003"]}
         assert result == expected
@@ -363,19 +363,19 @@ class TestLoadConfig:
             'disable = ["DOC003"]',
         )
         config_file = dump_config(tmp_dirpath, config_lines)
-        result = sphinxlinter.load_config(str(config_file), [])
+        result = sphinxlinter.load_config(str(config_file), [], False)
         assert result == {}
 
     def test_explicit_config_file_malformed_toml(self, tmp_dirpath):
         config_file = tmp_dirpath / "pyproject.toml"
         config_file.write_text("this is not valid TOML {][")  # Malformed TOML file
-        result = sphinxlinter.load_config(str(config_file), [])
+        result = sphinxlinter.load_config(str(config_file), [], False)
         assert result == {}
 
     def test_explicit_config_file_not_found(self, tmp_dirpath):
         config_file = tmp_dirpath / "pyproject.toml"  # Config file does not exist
         with pytest.raises(FileNotFoundError):
-            sphinxlinter.load_config(str(config_file), [])
+            sphinxlinter.load_config(str(config_file), [], False)
 
     def test_implicit_config_in_same_directory(self, tmp_dirpath):
         test_file = tmp_dirpath / "test.py"  # pyproject.toml in the same directory as the file
@@ -387,7 +387,7 @@ class TestLoadConfig:
         )
         dump_config(tmp_dirpath, config_lines)
 
-        result = sphinxlinter.load_config(None, [str(test_file)])
+        result = sphinxlinter.load_config(None, [str(test_file)], False)
         expected = {"enable": ["ALL"]}
         assert result == expected
 
@@ -405,7 +405,7 @@ class TestLoadConfig:
         dump_config(tmp_dirpath, config_lines)
 
         expected = {"disable": ["DOC001"]}
-        result = sphinxlinter.load_config(None, [str(test_file)])
+        result = sphinxlinter.load_config(None, [str(test_file)], False)
         assert result == expected
 
     def test_implicit_config_multiple_levels_up(self, tmp_dirpath):
@@ -421,7 +421,7 @@ class TestLoadConfig:
         )
         dump_config(tmp_dirpath, config_lines)
 
-        result = sphinxlinter.load_config(None, [str(test_file)])
+        result = sphinxlinter.load_config(None, [str(test_file)], False)
 
         expected = {"ignore": ["venv", ".git"]}
         assert result == expected
@@ -430,7 +430,7 @@ class TestLoadConfig:
         # No pyproject.toml found in any parent directory
         test_file = tmp_dirpath / "test.py"
         test_file.touch()
-        result = sphinxlinter.load_config(None, [str(test_file)])
+        result = sphinxlinter.load_config(None, [str(test_file)], False)
         assert result == {}
 
     def test_implicit_config_closest_file_wins(self, tmp_dirpath):
@@ -454,7 +454,7 @@ class TestLoadConfig:
         )
         dump_config(subdir, closer_config_lines)
 
-        result = sphinxlinter.load_config(None, [str(test_file)])
+        result = sphinxlinter.load_config(None, [str(test_file)], False)
 
         expected = {"enable": ["DOC002"]}
         assert result == expected
@@ -477,7 +477,7 @@ class TestLoadConfig:
         )
         dump_config(tmp_dirpath, config_lines)
 
-        result = sphinxlinter.load_config(None, [str(file1), str(file2)])
+        result = sphinxlinter.load_config(None, [str(file1), str(file2)], False)
 
         assert result == {"enable": ["DOC001", "DOC002"]}
 
@@ -492,7 +492,7 @@ class TestLoadConfig:
         )
         dump_config(tmp_dirpath, config_lines)
 
-        result = sphinxlinter.load_config(str(config_file), [])
+        result = sphinxlinter.load_config(str(config_file), [], False)
 
         expected = {
             "enable": ["DOC001", "DOC101", "DOC201"],
@@ -519,7 +519,7 @@ class TestLoadConfig:
         )
         dump_config(tmp_dirpath, good_config_lines)
 
-        result = sphinxlinter.load_config(None, [str(test_file)])
+        result = sphinxlinter.load_config(None, [str(test_file)], False)
 
         assert result == {"enable": ["DOC001"]}
 
@@ -532,6 +532,6 @@ class TestLoadConfig:
             'enable = ["ALL"]',
         )
         dump_config(tmp_dirpath, config_lines)
-        result = sphinxlinter.load_config(None, [str(subdir)])
+        result = sphinxlinter.load_config(None, [str(subdir)], False)
         expected = {"enable": ["ALL"]}
         assert result == expected
