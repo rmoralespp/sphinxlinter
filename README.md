@@ -105,9 +105,9 @@ The configuration section is `[tool.sphinx-linter]`.
 
 ### Configuration File Location
 
-The linter uses `--config` to specify a configuration file. If this option is not provided, it searches for a
-configuration file starting at the common ancestor of all specified files/directories, moving upward until it finds one
-or reaches the filesystem root.
+The linter uses `--config` to specify a configuration file (`pyproject.toml`). If this option is not provided, it 
+searches for a configuration file starting at the common ancestor of all specified files/directories, moving upward 
+until it finds one or reaches the filesystem root.
 If no configuration file is found, the linter runs with its default settings.
 
 > [!NOTE]
