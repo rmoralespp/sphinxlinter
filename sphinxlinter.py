@@ -904,7 +904,7 @@ def walk_module(quiet, data, filename, /):
 def walk(paths, ignore_dirs, quiet, /):
     suffix = ".py"
     for item in paths:
-        path = pathlib.Path(item)
+        path = pathlib.Path(item).resolve()
         if path.is_file():
             # The user requested this file.
             # return it even if it does not end with .py
@@ -918,7 +918,7 @@ def walk(paths, ignore_dirs, quiet, /):
                 for name in files:
                     if name.endswith(suffix):
                         yield pathlib.Path(os.path.join(root, name))
-        if not quiet:  # If False, print warnings to stderr.
+        elif not quiet:  # If False, print warnings to stderr.
             logging.warning("Unknown file: %s", path)
 
 

@@ -1,6 +1,7 @@
 ## Releases
 
 - **Fixed:** Avoid always logs warnings when using the `--quiet` option.
+- **Fixed:** Unknow default current directory `.` 
 
 ### v0.1.5 (2025-11-12)
 
