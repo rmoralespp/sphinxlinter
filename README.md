@@ -174,21 +174,22 @@ path/to/file.py:LINE-NUMBER: [CODE] Description of the violation.
 
 ### DOC0xx — Structure
 
-| Code   | Description                                      | Purpose                                                                                                                                       | Enabled by Default |
-|--------|--------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|--------------------| 
-| DOC001 | Invalid docstring section                        | Detects unknown Sphinx fields.                                                                                                                | Yes                |
-| DOC002 | Malformed section                                | Ensures valid field list syntax.                                                                                                              | Yes                |
-| DOC003 | Missing blank line after docstring               | Improves readability.                                                                                                                         | Yes                |
-| DOC004 | Missing blank line between summary and sections  | Enforces structure consistency.                                                                                                               | Yes                |
-| DOC005 | Too many consecutive blank lines                 | Prevents unnecessary whitespace.                                                                                                              | Yes                |
-| DOC006 | Trailing empty lines                             | Keeps docstrings compact.                                                                                                                     | Yes                |
-| DOC007 | Misplaced section                                | Enforces section order and grouping.                                                                                                          | Yes                |
-| DOC008 | One-line docstring should end with a period      | Complies with [PEP 257](https://peps.python.org/pep-0257/#one-line-docstrings).                                                               | Yes                |
-| DOC009 | Docstring must not use more than 3 double quotes | Promotes consistent quoting.                                                                                                                  | Yes                |
-| DOC010 | Section definition contains invalid whitespace   | Ensures proper formatting.                                                                                                                    | Yes                |
-| DOC011 | Trailing non-empty lines after last section      | Maintains clean endings.                                                                                                                      | Yes                |
-| DOC012 | Leading whitespaces in first non-blank line      | Ensures no leading spaces before docstring content.                                                                                           | Yes                |
-| DOC013 | Use the common section key                       | Complies with Sphinx common [sections](https://sphinx-rtd-tutorial.readthedocs.io/en/latest/docstrings.html#the-sphinx-docstring-format) keys | False              |
+| Code   | Description                                                                      | Purpose                                                                                                                                       | Enabled by Default |
+|--------|----------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|--------------------| 
+| DOC001 | Invalid docstring section                                                        | Detects unknown Sphinx fields.                                                                                                                | Yes                |
+| DOC002 | Malformed section                                                                | Ensures valid field list syntax.                                                                                                              | Yes                |
+| DOC003 | Missing blank line after docstring                                               | Improves readability.                                                                                                                         | Yes                |
+| DOC004 | Missing blank line between summary and sections                                  | Enforces structure consistency.                                                                                                               | Yes                |
+| DOC005 | Too many consecutive blank lines                                                 | Prevents unnecessary whitespace.                                                                                                              | Yes                |
+| DOC006 | Trailing empty lines                                                             | Keeps docstrings compact.                                                                                                                     | Yes                |
+| DOC007 | Misplaced section                                                                | Enforces section order and grouping.                                                                                                          | Yes                |
+| DOC008 | One-line docstring should end with a period                                      | Complies with [PEP 257](https://peps.python.org/pep-0257/#one-line-docstrings).                                                               | Yes                |
+| DOC009 | Docstring must not use more than 3 double quotes                                 | Promotes consistent quoting.                                                                                                                  | Yes                |
+| DOC010 | Section definition contains invalid whitespace                                   | Ensures proper formatting.                                                                                                                    | Yes                |
+| DOC011 | Trailing non-empty lines after last section                                      | Maintains clean endings.                                                                                                                      | Yes                |
+| DOC012 | Leading whitespaces in first non-blank line                                      | Ensures no leading spaces before docstring content.                                                                                           | Yes                |
+| DOC013 | Use the common section key                                                       | Complies with Sphinx common [sections](https://sphinx-rtd-tutorial.readthedocs.io/en/latest/docstrings.html#the-sphinx-docstring-format) keys | No                 |
+| DOC014 | Summary must fit on a single line and is separated from the rest by a blank line | Complies with [PEP 257](https://peps.python.org/pep-0257/#multi-line-docstrings).                                                             | No                 |
 
 ---
 
@@ -209,7 +210,8 @@ path/to/file.py:LINE-NUMBER: [CODE] Description of the violation.
 > [!TIP]
 >
 > **DOC013** recommends using
-> the [standard sections keys](https://sphinx-rtd-tutorial.readthedocs.io/en/latest/docstrings.html#the-sphinx-docstring-format)
+>
+the [standard sections keys](https://sphinx-rtd-tutorial.readthedocs.io/en/latest/docstrings.html#the-sphinx-docstring-format)
 > instead of all the
 > variants [accepted by Sphinx](https://www.sphinx-doc.org/en/master/usage/domains/python.html#info-field-lists),
 > in order to improve consistency and clarity in parameter documentation within docstrings.

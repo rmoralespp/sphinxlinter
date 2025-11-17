@@ -368,7 +368,7 @@ def foo(a):
 
 
 @pytest.mark.parametrize("docs", [
-    "A multi-line\ndocstring",
+    "A multi-line\n\ndocstring",
     "A one-line title\n\n:param str a:",
     "A one-line title\n\n:meta deprecated: foo",
 ])
@@ -384,8 +384,8 @@ def foo(a):
 
 
 @pytest.mark.parametrize("docs", [
-    '""""\nTitle."""',  # four quotes at the start
-    '"""" \nTitle."""',  # four quotes at the start with space
+    '""""\n\nTitle."""',  # four quotes at the start
+    '"""" \n\nTitle."""',  # four quotes at the start with space
 ])
 def test_DOC009(violations, docs):
     content = f'''
@@ -402,8 +402,8 @@ def foo():
 
 
 @pytest.mark.parametrize("docs", [
-    '""""Title."""',  # four quotes at the start
-    '"""" foo\nTitle."""',  # four quotes at the start with space because exists more words
+    '""""Title."""',  # four quotes at the start with no space because no more words
+    '"""" foo var."""',  # four quotes at the start with space because exists more words
 ])
 def test_DOC009_no_raise(violations, docs):
     content = f'''
@@ -672,6 +672,38 @@ def foo(a):
         (3, 'DOC013', 'Use the common section key ({!r}) instead of ({!r})', ('raises', 'raise')),
     )
 
+    result = tuple(chequer(content, violations))
+    assert result == expected
+
+
+def test_DOC014(violations):
+    content = '''
+def foo(a):
+    """
+    Summary line.
+    Extended description of function.
+    """
+    pass
+'''
+
+    expected = ((3, 'DOC014', 'Summary must fit on a single line and is separated from the rest by a blank line.', ()),)
+
+    result = tuple(chequer(content, violations))
+    assert result == expected
+
+
+def test_DOC014_no_raise(violations):
+    content = '''
+def foo(a):
+    """
+    Summary line.
+
+    Extended description of function.
+    """
+    pass
+'''
+
+    expected = ()
     result = tuple(chequer(content, violations))
     assert result == expected
 

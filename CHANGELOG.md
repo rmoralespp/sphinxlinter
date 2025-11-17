@@ -1,6 +1,7 @@
 ## Releases
 
 - **Added:** `DOC013` to check that the keys of the sections of the documentation chain are the common ones.
+- **Added:** `DOC014` to check if docstring summary fits on a single line.
 
 ### v0.1.6 (2025-11-13)
 

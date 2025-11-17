@@ -227,6 +227,10 @@ class Violations:
     # variants [accepted by Sphinx](https://www.sphinx-doc.org/en/master/usage/domains/python.html#info-field-lists),
     # in order to improve consistency and clarity in parameter documentation within docstrings.
     DOC013 = (False, "DOC013", "Use the common section key ({!r}) instead of ({!r})")  # Disabled by default
+
+    # PEP257 recommends that the summary line should fit on a single line, followed by a blank line,
+    # followed by a more elaborate description
+    DOC014 = (False, "DOC014", "Summary must fit on a single line and is separated from the rest by a blank line.")
     # ----------------------------------------------------------------------------
     # DOC1xx: Parameter issues
     # ----------------------------------------------------------------------------
@@ -348,6 +352,11 @@ class Violations:
                 line = summary_lines[0].rstrip()
                 if line and not line.endswith('.'):
                     yield cls.DOC008, ()  # Summary should end with a period
+
+            # Take first non-blank lines in summary
+            first_summary_lines = sum(1 for _ in itertools.takewhile(bool, summary_lines))
+            if first_summary_lines > 1:
+                yield cls.DOC014, ()  # Summary must fit on a single line
 
     @classmethod
     def validate_params(cls, parsed_docs, parsed_params, /):
