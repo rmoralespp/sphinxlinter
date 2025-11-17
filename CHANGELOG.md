@@ -1,5 +1,7 @@
 ## Releases
 
+- **Added:** `DOC013` to check that the keys of the sections of the documentation chain are the common ones.
+
 ### v0.1.6 (2025-11-13)
 
 - **Fixed:** Avoid always logs warnings when using the `--quiet` option.

@@ -654,6 +654,28 @@ def foo(a):
     assert result == expected
 
 
+def test_DOC013(violations):
+    content = '''
+def foo(a):
+    """Title.
+
+    :parameter str a: description
+    :raise ValueError: description
+    :returns: description
+    """
+    pass
+'''
+
+    expected = (
+        (3, 'DOC013', 'Use the common section key ({!r}) instead of ({!r})', ('param', 'parameter')),
+        (3, 'DOC013', 'Use the common section key ({!r}) instead of ({!r})', ('return', 'returns')),
+        (3, 'DOC013', 'Use the common section key ({!r}) instead of ({!r})', ('raises', 'raise')),
+    )
+
+    result = tuple(chequer(content, violations))
+    assert result == expected
+
+
 @pytest.mark.parametrize("docs", ["", " ", "  ", "  \n"])
 def test_DOC012_ignore_if_blank_docstring(docs, violations):
     content = f'''
@@ -930,6 +952,8 @@ def foo():
     expected = (
         ((3, "DOC205", "Duplicated return section ({!r})", (key,)),)
     )
+    if key == "returns":
+        expected += ((3, "DOC013", "Use the common section key ({!r}) instead of ({!r})", ("return", key,)),)
     result = tuple(chequer(content, violations))
     assert result == expected
 
@@ -940,7 +964,7 @@ def foo():
     """
     Title.
 
-    :raise except: description
+    :raises except: description
     """
 
     pass

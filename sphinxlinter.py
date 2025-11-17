@@ -65,6 +65,12 @@ ignore_set = {"meta"}  # At this moment, it's ignored
 # Sections that define types
 types_set = {ptype_key, rtype_key, vartype_key}  # Sections that define types
 
+# Standard section keys:
+# - Complies with (https://sphinx-rtd-tutorial.readthedocs.io/en/latest/docstrings.html#the-sphinx-docstring-format)
+standard_param_key = "param"
+standard_return_key = "return"
+standard_raise_key = "raises"
+
 # ============================================================================
 # Regular expressions for parsing docstrings:
 # ============================================================================
@@ -214,6 +220,13 @@ class Violations:
     DOC010 = (True, "DOC010", "Section definition contains invalid whitespace ({!r})")
     DOC011 = (True, "DOC011", "Trailing non-empty lines after last section")
     DOC012 = (True, "DOC012", "Leading whitespaces in first non-blank line ({!r})")
+
+    # **DOC013** recommends using the [standard sections keys]
+    # (https://sphinx-rtd-tutorial.readthedocs.io/en/latest/docstrings.html#the-sphinx-docstring-format)
+    # instead of all the
+    # variants [accepted by Sphinx](https://www.sphinx-doc.org/en/master/usage/domains/python.html#info-field-lists),
+    # in order to improve consistency and clarity in parameter documentation within docstrings.
+    DOC013 = (False, "DOC013", "Use the common section key ({!r}) instead of ({!r})")  # Disabled by default
     # ----------------------------------------------------------------------------
     # DOC1xx: Parameter issues
     # ----------------------------------------------------------------------------
@@ -379,6 +392,10 @@ class Violations:
                 # Params after returns are considered misplaced
                 yield cls.DOC007, (section_key, first_return.section_key,)
 
+            if section_key in param_set and section_key != standard_param_key:
+                # Suggest using standard section key
+                yield cls.DOC013, (standard_param_key, section_key)
+
             if name and name not in documented:
                 documented.append(name)
 
@@ -439,6 +456,10 @@ class Violations:
             if section_key in bag:
                 yield cls.DOC205, (section_key,)  # Duplicate return section
 
+            if section_key in return_set and section_key != standard_return_key:
+                # Suggest using standard section key
+                yield cls.DOC013, (standard_return_key, section_key)
+
             if section_key in return_set:
                 bag.update(return_set)  # Mark all return section as used to avoid duplicates (:return: & :returns:)
             else:
@@ -467,6 +488,10 @@ class Violations:
             if first_return and order > first_return.order:
                 # Raises after returns are considered misplaced
                 yield cls.DOC007, (section_key, first_return.section_key,)
+
+            if section_key in raises_set and section_key != standard_raise_key:
+                # Suggest using standard section key
+                yield cls.DOC013, (standard_raise_key, section_key)
 
     @classmethod
     def validate_variables(cls, parsed_docs, /):
