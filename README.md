@@ -210,8 +210,7 @@ path/to/file.py:LINE-NUMBER: [CODE] Description of the violation.
 > [!TIP]
 >
 > **DOC013** recommends using
->
-the [standard sections keys](https://sphinx-rtd-tutorial.readthedocs.io/en/latest/docstrings.html#the-sphinx-docstring-format)
+> the [standard sections keys](https://sphinx-rtd-tutorial.readthedocs.io/en/latest/docstrings.html#the-sphinx-docstring-format)
 > instead of all the
 > variants [accepted by Sphinx](https://www.sphinx-doc.org/en/master/usage/domains/python.html#info-field-lists),
 > in order to improve consistency and clarity in parameter documentation within docstrings.
