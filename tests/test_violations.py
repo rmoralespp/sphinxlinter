@@ -425,6 +425,7 @@ def foo():
     (":type a:  str", ":type a:  str"),  # leading space before type hint
     (":type a: str ", ":type a: str "),  # trailing space after type hint
     (":type a:str", ":type a:str"),  # missing leading space before type hint
+    (" :type a: str", " :type a: str"),  # over-indented type
     # param
     (":param  str  a: description", ":param  str  a:"),  # consecutive spaces
     (": param str a: description", ": param str a:"),  # leading space before param keyword
@@ -434,18 +435,21 @@ def foo():
     (":param str a:description", ":param str a:description"),  # missing leading space before description
     (":param str a:  description", ":param str a:  description"),  # consecutive leading spaces before description
     (":param str a: description ", ":param str a: description "),  # Trailing space after description
+    (" :param str a: description", " :param str a: description"),  # over-indented param
     # return
     (": return: description", ": return:"),  # leading space before return keyword
     (":return : description", ":return :"),  # trailing space after return keyword
     (":return:description", ":return:description"),  # missing leading space before description
     (":return:  description", ":return:  description"),  # consecutive leading spaces before description
     (":return: description ", ":return: description "),  # Trailing space after description
+    (" :return: description", " :return: description"),  # over-indented return
     # rtype
     (": rtype: int", ": rtype: int"),  # leading space before rtype keyword
     (":rtype : int", ":rtype : int"),  # trailing space after rtype keyword
     (":rtype:  int", ":rtype:  int"),  # leading space before type hint
     (":rtype: int ", ":rtype: int "),  # trailing space after type hint
     (":rtype:int", ":rtype:int"),  # missing leading space before type hint
+    (" :rtype: int", " :rtype: int"),  # over-indented rtype
     # raises
     (": raises ValueError: description", ": raises ValueError:"),  # leading ws before raises keyword
     (":raises  ValueError: description", ":raises  ValueError:"),  # consecutive ws after raises keyword
@@ -456,6 +460,7 @@ def foo():
     (":raises ValueError:description", ":raises ValueError:description"),  # missing leading space before description
     (":raises ValueError:  description", ":raises ValueError:  description"),  # consecutive leading ws before desc
     (":raises ValueError: description ", ":raises ValueError: description "),  # trailing space after description
+    (" :raises ValueError: description", " :raises ValueError: description"),  # over-indented raises
 ])
 def test_DOC010_function(section, violations, expected_section):
     content = f'''
@@ -510,18 +515,21 @@ def foo(a):
     (":vartype  a:  int", ":vartype  a:  int"),  # consecutive spaces both sides
     (":vartype a: int ", ":vartype a: int "),  # trailing space after type hint
     (":vartype a:int", ":vartype a:int"),  # missing leading space before type hint
+    (" :vartype a: int", " :vartype a: int"),  # over-indented vartype
     # ivar
     (":ivar  a: description", ":ivar  a:"),  # consecutive spaces
     (": ivar a: description", ": ivar a:"),  # leading space before ivar keyword
     (":ivar a : description", ":ivar a :"),  # trailing space after name
     (":ivar a: description ", ":ivar a: description "),  # trailing space after description
     (":ivar a:description", ":ivar a:description"),  # missing leading space before description
+    (" :ivar a: description", " :ivar a: description"),  # over-indented
     # cvar
     (":cvar  a: description", ":cvar  a:"),  # consecutive spaces
     (": cvar a: description", ": cvar a:"),  # leading space before cvar keyword
     (":cvar a : description", ":cvar a :"),  # trailing space after name
     (":cvar a: description ", ":cvar a: description "),  # trailing space after description
     (":cvar a:description", ":cvar a:description"),  # missing leading space before description
+    (" :cvar a: description", " :cvar a: description"),  # over-indented
 ])
 def test_DOC010_class(section, expected_section, violations):
     content = f'''

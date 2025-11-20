@@ -71,6 +71,10 @@ standard_param_key = "param"
 standard_return_key = "return"
 standard_raise_key = "raises"
 
+# All section keys:
+all_section_set = param_set | return_set | raises_set | class_var_set | types_set | {module_var_key}
+all_section_str = "|".join(sorted(all_section_set))
+
 # ============================================================================
 # Regular expressions for parsing docstrings:
 # ============================================================================
@@ -110,6 +114,11 @@ section_ws_right_type_err = re.compile('(^\\S|\\s{2,}|[ \t]+$)').search
 # - starts with 2+ whitespace (ignore break-line)
 # - trailing whitespace (ignore break-line)
 section_ws_right_desc_err = re.compile('(^\\S|^[ \t]{2,}|[ \t]+$)').search
+
+# ----------------------------------
+# Over-indented section matcher:
+# ----------------------------------
+section_over_indented_err = re.compile('^[ \t]+:(?={}).+?'.format(all_section_str)).search
 
 
 class NodeTypes:
@@ -231,6 +240,9 @@ class Violations:
     # PEP257 recommends that the summary line should fit on a single line, followed by a blank line,
     # followed by a more elaborate description
     DOC014 = (False, "DOC014", "Summary must fit on a single line and is separated from the rest by a blank line.")
+
+    DOC015 = (True, "DOC015", "Section is over-indented ({!r})")
+
     # ----------------------------------------------------------------------------
     # DOC1xx: Parameter issues
     # ----------------------------------------------------------------------------
@@ -689,6 +701,10 @@ def parse_docs(node, filename, /):
 
     rawdocs = ast.get_docstring(node, clean=False)
     docs = rawdocs if rawdocs is None else inspect.cleandoc(rawdocs)
+
+    # Check for over-indented sections, which cannot be detected by itersections
+    over_indented = (ln for ln in docs.splitlines() if section_over_indented_err(ln)) if docs else ()
+    bad_whitespaces_def.extend(over_indented)
 
     kind = get_node_type(node)
     is_func = kind == NodeTypes.FUNCTION
