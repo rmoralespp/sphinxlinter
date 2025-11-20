@@ -241,8 +241,6 @@ class Violations:
     # followed by a more elaborate description
     DOC014 = (False, "DOC014", "Summary must fit on a single line and is separated from the rest by a blank line.")
 
-    DOC015 = (True, "DOC015", "Section is over-indented ({!r})")
-
     # ----------------------------------------------------------------------------
     # DOC1xx: Parameter issues
     # ----------------------------------------------------------------------------
