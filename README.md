@@ -23,7 +23,7 @@ It is designed to **complement**, not overlap with, these tools.
 It targets **Sphinx-specific field list conventions** and performs **semantic consistency checks**
 that go beyond what other linters cover.
 
-Specifically, it focuses on:
+**Features include:**
 
 - 🧩 Enforces
   [Sphinx-style field list](https://www.sphinx-doc.org/en/master/usage/domains/python.html#info-field-lists) formatting
@@ -33,7 +33,7 @@ Specifically, it focuses on:
 - ⚙️ Provides a **minimalist CLI** for easy workflow integration
 - 🐍 Uses only the **Python standard library** for full compatibility
 - 🧼 Promotes **clean, maintainable documentation**
-- 🔌 Easily integrates with **pre-commit hooks** and CI pipelines
+- 🔌 Provides [pre‑commit](https://pre-commit.com/) hook integration for automated checks
 
 ---
 
@@ -73,28 +73,19 @@ spxl path/to/file.py path/to/package/
 
 #### Pre‑commit Integration
 
-The linter can be easily integrated into your pre‑commit workflow.
+The linter can be easily integrated into your [pre‑commit](https://pre-commit.com/) workflow.
 
-1. Add the following to your `.pre-commit-config.yaml`:
-    ```yaml
-    repos:
-      - repo: https://github.com/rmoralespp/sphinxlinter
-        rev: 1e7bd17cb1be7e019a47027cab7e528636936fc8
-        hooks:
-          - id: sphinxlinter
-            args: ["--quiet", "--enable=ALL"]  # customize as needed
-            pass_filenames: false  # needed if excluding files with pyproject.toml
-    ```
+Update your `.pre-commit-config.yaml` to include the **sphinxlinter** hook:
 
-2. Install the pre-commit hook:
-    ```bash
-    pre-commit install
-    ```
-
-3. Run the pre-commit hook manually (optional):
-    ```bash
-    pre-commit run sphinxlinter --all-files
-    ```
+```yaml
+repos:
+  - repo: https://github.com/rmoralespp/sphinxlinter
+    rev: 1e7bd17cb1be7e019a47027cab7e528636936fc8  # Use the latest commit hash or tag
+    hooks:
+      - id: sphinxlinter
+        args: [ "--quiet", "--enable=ALL" ]  # customize as needed
+        pass_filenames: false  # needed if excluding files with pyproject.toml
+```
 
 ### Standalone Script
 
