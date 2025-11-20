@@ -79,7 +79,7 @@ The linter can be easily integrated into your pre‑commit workflow.
     ```yaml
     repos:
       - repo: https://github.com/rmoralespp/sphinxlinter
-        rev: v0.1.9  # use the latest tag
+        rev: 1e7bd17cb1be7e019a47027cab7e528636936fc8
         hooks:
           - id: sphinxlinter
             args: ["--quiet", "--enable=ALL"]  # customize as needed
