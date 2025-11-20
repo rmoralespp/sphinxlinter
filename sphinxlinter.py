@@ -787,6 +787,8 @@ def parse_docs(node, filename, /):
 
 def has_return_or_yield(node, /):
     """
+    Detects if the given function node has either a 'return', 'yield', or 'yield from' statement.
+
     Returns True if the given AST node (ast.FunctionDef or ast.AsyncFunctionDef)
     contains a 'return', 'yield', or 'yield from' statement in its main body
     (excluding nested functions).
@@ -829,6 +831,8 @@ def has_return_or_yield(node, /):
 
 def is_not_implemented(node, /, rawdocs=None):
     """
+    Detects if the given function node is not implemented.
+
     Returns True if the given AST node's body contains exactly one statement
     and that statement is one of the following:
       - `pass`
