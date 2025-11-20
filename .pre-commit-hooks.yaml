@@ -1,0 +1,7 @@
+- id: sphinxlinter
+  name: sphinxlinter
+  description: A lightweight Python linter for checking Sphinx docstrings.
+  entry: spxl
+  language: python
+  types: [python]
+  require_serial: true

@@ -33,6 +33,7 @@ Specifically, it focuses on:
 - ⚙️ Provides a **minimalist CLI** for easy workflow integration
 - 🐍 Uses only the **Python standard library** for full compatibility
 - 🧼 Promotes **clean, maintainable documentation**
+- 🔌 Easily integrates with **pre-commit hooks** and CI pipelines
 
 ---
 
@@ -69,6 +70,31 @@ spxl path/to/file.py path/to/package/
 > [!NOTE]
 >
 > Directories are scanned recursively for `.py` files, ignoring virtual environments and cache folders.
+
+#### Pre‑commit Integration
+
+The linter can be easily integrated into your pre‑commit workflow.
+
+1. Add the following to your `.pre-commit-config.yaml`:
+    ```yaml
+    repos:
+      - repo: https://github.com/rmoralespp/sphinxlinter
+        rev: v0.1.9  # use the latest tag
+        hooks:
+          - id: sphinxlinter
+            args: ["--quiet", "--enable=ALL"]  # customize as needed
+            pass_filenames: false  # needed if excluding files with pyproject.toml
+    ```
+
+2. Install the pre-commit hook:
+    ```bash
+    pre-commit install
+    ```
+
+3. Run the pre-commit hook manually (optional):
+    ```bash
+    pre-commit run sphinxlinter --all-files
+    ```
 
 ### Standalone Script
 
@@ -210,7 +236,8 @@ path/to/file.py:LINE-NUMBER: [CODE] Description of the violation.
 > [!TIP]
 >
 > **DOC013** recommends using
-> the [standard sections keys](https://sphinx-rtd-tutorial.readthedocs.io/en/latest/docstrings.html#the-sphinx-docstring-format)
+>
+the [standard sections keys](https://sphinx-rtd-tutorial.readthedocs.io/en/latest/docstrings.html#the-sphinx-docstring-format)
 > instead of all the
 > variants [accepted by Sphinx](https://www.sphinx-doc.org/en/master/usage/domains/python.html#info-field-lists),
 > in order to improve consistency and clarity in parameter documentation within docstrings.

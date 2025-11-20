@@ -1,5 +1,7 @@
 ## Releases
 
+- **Added:** Add **pre-commit** hook support
+
 ### v0.1.8 (2025-11-20)
 
 - **Changed:** Improved `DOC010` to detect over-indented individual section definitions.
