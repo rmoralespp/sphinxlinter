@@ -71,22 +71,6 @@ spxl path/to/file.py path/to/package/
 >
 > Directories are scanned recursively for `.py` files, ignoring virtual environments and cache folders.
 
-#### Pre‑commit Integration
-
-The linter can be easily integrated into your [pre‑commit](https://pre-commit.com/) workflow.
-
-Update your `.pre-commit-config.yaml` to include the **sphinxlinter** hook:
-
-```yaml
-repos:
-  - repo: https://github.com/rmoralespp/sphinxlinter
-    rev: 1e7bd17cb1be7e019a47027cab7e528636936fc8  # Use the latest commit hash or tag
-    hooks:
-      - id: sphinxlinter
-        args: [ "--quiet", "--enable=ALL" ]  # customize as needed
-        pass_filenames: false  # needed if excluding files with pyproject.toml
-```
-
 ### Standalone Script
 
 Alternatively, you can download the standalone script by clicking the
@@ -177,6 +161,26 @@ path/to/file.py:LINE-NUMBER: [CODE] Description of the violation.
 > * Exit code `0` means no violations were found; exit code `1` indicates that violations were detected.
 > * The tool never modifies source files.
 
+## Pre‑commit Integration
+
+The linter can be easily integrated into your [pre‑commit](https://pre-commit.com/) workflow.
+
+Update your `.pre-commit-config.yaml` to include the **sphinxlinter** hook:
+
+```yaml
+repos:
+  - repo: https://github.com/rmoralespp/sphinxlinter
+    rev: 1e7bd17cb1be7e019a47027cab7e528636936fc8  # Use the latest commit hash or tag
+    hooks:
+      - id: sphinxlinter
+        args: [ "--quiet", "--enable=ALL" ]  # customize as needed
+        pass_filenames: false  # needed if excluding files with pyproject.toml
+```
+
+---
+
+## Violation Codes
+
 **Categories:**
 
 - `DOC0xx`: Structure and formatting issues
@@ -184,10 +188,6 @@ path/to/file.py:LINE-NUMBER: [CODE] Description of the violation.
 - `DOC2xx`: Return issues
 - `DOC3xx`: Raises issues
 - `DOC4xx`: Variable issues
-
----
-
-## Violation Codes
 
 ### DOC0xx — Structure
 
